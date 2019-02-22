@@ -1,0 +1,69 @@
+{
+    "name": "node-red-contrib-fabric",
+    "version": "0.0.1",
+    "description": "Hyperledger Fabric nodes for node-red",
+    "dependencies": {
+        "fabric-network": "1.4.0",
+        "fabric-client": "1.4.0"
+    },
+    "devDependencies": {
+        "eslint": "^3.5.0",
+        "license-check-and-add": "2.3.1"
+    },
+    "engines": {
+        "node": ">=8.9.5"
+    },
+    "license": "Apache-2.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/caroline-church/node-red-contrib-fabric"
+    },
+    "keywords": [
+        "node-red",
+        "fabric",
+        "blockchain",
+        "hyperledger",
+        "solutions"
+    ],
+    "node-red": {
+        "nodes": {
+            "fabric": "nodes/fabric.js",
+            "fabric-config": "nodes/fabric-config.js"
+        }
+    },
+    "scripts": {
+        "licchk": "license-check-and-add",
+        "test": "npm run licchk"
+    },
+    "author": "Caroline Church",
+    "license-check-and-add-config": {
+        "folder": ".",
+        "license": "LICENSE.txt",
+        "exact_paths_method": "EXCLUDE",
+        "exact_paths": [
+            "node_modules"
+        ],
+        "file_type_method": "EXCLUDE",
+        "file_types": [
+            ".yml"
+        ],
+        "insert_license": false,
+        "license_formats": {
+            "editorconfig": {
+                "eachLine": {
+                    "prepend": "# "
+                }
+            },
+            "js": {
+                "prepend": "/*",
+                "append": " */",
+                "eachLine": {
+                    "prepend": " * "
+                }
+            },
+            "md": {
+                "file": "../../markdown-license.txt"
+            }
+        }
+    }
+}

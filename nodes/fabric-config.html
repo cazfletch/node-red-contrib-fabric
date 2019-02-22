@@ -1,0 +1,115 @@
+<!--
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<style>
+    .fabric-button {
+        background-color: powderblue;
+        height: 2.4em;
+        width: 7.5em;
+        border: solid 1px lightgrey;
+        border-radius: 10%;
+        position: relative;
+    }
+
+    .upload-button {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+    }
+
+    .upload-button input[type=file] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+    }
+
+    .upload {
+        margin-bottom: 1.5em;
+        border: 1px solid lightgray;
+        padding: 1em;
+    }
+
+    .error-message {
+        color: red;
+    }
+</style>
+<script type="text/x-red" data-template-name="fabric-config">
+    <div class="form-row upload">
+        <div>Enter connection details</div>
+        <label for="node-config-input-connectionName"><i class="fa"></i>Connection Name</label>
+        <div>
+            <input type="text" id="node-config-input-connectionName">
+        </div>
+
+        <div id="node-config-input-connectionProfile-outer">
+            <div class="form-row" style="margin-bottom: 0px;">
+                <label for="node-config-input-connectionProfile"><i class="fa"></i> Connection Profile</label>
+                <input type="hidden" id="node-config-input-connectionProfile" autofocus="autofocus">
+            </div>
+            <div class="form-row node-text-editor-row">
+                <div style="height: 250px; min-height:150px;" class="node-text-editor" id="node-config-input-connectionProfile-editor"></div>
+            </div>
+        </div>
+
+        <label for="node-config-input-cert"><i class="fa"></i>Wallet Location</label>
+        <div>
+            <input type="text" id="node-config-input-walletLocation">
+        </div>
+    </div>
+
+</script>
+
+<script type="text/x-red" data-help-name="fabric-config">
+  <p>Hyperledger Fabric config node. Provides the configuration for the Hyperledger Fabric nodes</p>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('fabric-config', {
+        category : 'config',
+        defaults : {
+            connectionName : {value : '', required : true},
+            connectionProfile : {value : '', required : true},
+            walletLocation : {value : '', required : true},
+            output : {value : 'str'}
+
+        },
+        label : function () {
+            return this.connectionName;
+        },
+        oneditprepare : function () {
+            var that = this;
+            this.editor = RED.editor.createEditor({
+                id : 'node-config-input-connectionProfile-editor',
+                mode : 'ace/mode/json',
+                value : $('#node-config-input-connectionProfile').val()
+            });
+            RED.library.create({
+                url : 'functions', // where to get the data from
+                type : 'function', // the type of object the library is for
+                editor : that.editor, // the field name the main text body goes to
+                fields : ['name', 'outputs']
+            });
+            this.editor.focus();
+        },
+        oneditsave : function () {
+            $('#node-config-input-connectionProfile').val(this.editor.getValue());
+            this.editor.destroy();
+            delete this.editor;
+        },
+        oneditcancel : function () {
+            this.editor.destroy();
+            delete this.editor;
+        }
+    });
+</script>
