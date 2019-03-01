@@ -47,11 +47,6 @@ limitations under the License.
 <script type="text/x-red" data-template-name="fabric-config">
     <div class="form-row upload">
         <div>Enter connection details</div>
-        <label for="node-config-input-connectionName"><i class="fa"></i>Connection Name</label>
-        <div>
-            <input type="text" id="node-config-input-connectionName">
-        </div>
-
         <div id="node-config-input-connectionProfile-outer">
             <div class="form-row" style="margin-bottom: 0px;">
                 <label for="node-config-input-connectionProfile"><i class="fa"></i> Connection Profile</label>
@@ -60,6 +55,11 @@ limitations under the License.
             <div class="form-row node-text-editor-row">
                 <div style="height: 250px; min-height:150px;" class="node-text-editor" id="node-config-input-connectionProfile-editor"></div>
             </div>
+        </div>
+
+        <label for="node-config-input-identityName"><i class="fa"></i>Identity Name</label>
+        <div>
+            <input type="text" id="node-config-input-identityName">
         </div>
 
         <label for="node-config-input-cert"><i class="fa"></i>Wallet Location</label>
@@ -78,14 +78,14 @@ limitations under the License.
     RED.nodes.registerType('fabric-config', {
         category : 'config',
         defaults : {
-            connectionName : {value : '', required : true},
             connectionProfile : {value : '', required : true},
+            identityName : {value : '', required : true},
             walletLocation : {value : '', required : true},
             output : {value : 'str'}
 
         },
         label : function () {
-            return this.connectionName;
+            return this.identityName;
         },
         oneditprepare : function () {
             var that = this;

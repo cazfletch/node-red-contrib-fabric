@@ -24,13 +24,13 @@ module.exports = function (RED) {
 
     /**
      *
-     * @param {string} connectionName connectionName
+     * @param {string} identityName identityName
      * @param {string} channelName channel
      * @param {string}contractName contract
      * @returns {PromiseLike<Contract | never>} promise
      */
-    async function connect (connectionName, channelName, contractName, node) {
-        node.log(`connect ${connectionName} ${channelName} ${contractName}`);
+    async function connect (identityName, channelName, contractName, node) {
+        node.log(`connect ${identityName} ${channelName} ${contractName}`);
         const parsedProfile = JSON.parse(node.connection.connectionProfile);
         const client = await fabricClient.loadFromConfig(parsedProfile);
         node.log('loaded client from connection profile');
@@ -40,7 +40,7 @@ module.exports = function (RED) {
         node.log('got wallet');
         const options = {
             wallet : wallet,
-            identity : connectionName,
+            identity : identityName,
             discovery : {
                 asLocalhost : true
             }
@@ -133,16 +133,15 @@ module.exports = function (RED) {
         node.on('input', async function (msg) {
             this.connection = RED.nodes.getNode(config.connection);
             try {
-                // node.log('config ' + util.inspect(node.connection, false, null));
-                const connectionName = node.connection.connectionName;
-                node.log('using connection: ' + connectionName);
+                const identityName = node.connection.identityName;
+                node.log('using connection: ' + identityName);
                 node.log('checking payload ' + util.inspect(msg.payload, false, null));
                 checkPayload(msg.payload);
-                const contract = await connect(connectionName, config.channelName, config.contractName, node);
+                const contract = await connect(identityName, config.channelName, config.contractName, node);
                 if (config.actionType === 'submit') {
-                    return submit(contract, msg.payload, node);
+                    await submit(contract, msg.payload, node)
                 } else {
-                    return evaluate(contract, msg.payload, node);
+                    await evaluate(contract, msg.payload, node);
                 }
 
             } catch (error) {
@@ -172,11 +171,11 @@ module.exports = function (RED) {
             this.connection = RED.nodes.getNode(config.connection);
             try {
                 //node.log('config ' + util.inspect(node.connection, false, null));
-                const connectionName = node.connection.connectionName;
-                node.log('using connection: ' + connectionName);
+                const identityName = node.connection.identityName;
+                node.log('using connection: ' + identityName);
                 node.log('checking payload ' + util.inspect(msg.payload, false, null));
                 checkPayload(msg.payload);
-                const contract = await connect(connectionName, config.channelName, config.contractName, node);
+                const contract = await connect(identityName, config.channelName, config.contractName, node);
                 let result;
                 if (config.actionType === 'submit') {
                     result = await submit(contract, msg.payload, node);
@@ -214,9 +213,9 @@ module.exports = function (RED) {
         this.connection = RED.nodes.getNode(config.connection);
 
         // node.log('config ' + util.inspect(node.connection, false, null));
-        const connectionName = node.connection.connectionName;
-        node.log('using connection: ' + connectionName);
-        connect(connectionName, config.channelName, config.contractName, node)
+        const identityName = node.connection.identityName;
+        node.log('using connection: ' + identityName);
+        connect(identityName, config.channelName, config.contractName, node)
             .then(() => {
                 return subscribeToEvents(config.channelName, config.contractName, config.eventName, node);
             })
