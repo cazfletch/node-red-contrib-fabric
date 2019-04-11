@@ -6,7 +6,7 @@ var Fabric_Client = require('fabric-client');
 var fs = require('fs');
 
 const networkInfo = {
-    channelName:"defaultchannel",
+    channelName: "defaultchannel",
     chaincodeName: "identity-manager",
     eventName: "createIdentity",
     identityName: "admin",
@@ -101,7 +101,7 @@ async function subscribeToEvent(peer, channel, chaincodeName, eventName, startBl
     eventHub.connect(true);
 }
 
-function handleEvent(event){
+function handleEvent(event) {
     console.log("We do something with the event--------");
     console.log(event);
 }

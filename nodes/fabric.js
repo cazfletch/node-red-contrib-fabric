@@ -79,7 +79,8 @@ module.exports = function (RED) {
         return contract.submitTransaction(payload.transactionName, ...payload.args);
     }
 
-    async function subscribeToEvents (channelName, contractName, eventName = '.*', node) {
+    // ENHANCE : Updated param list
+    async function subscribeToEvents (channelName, contractName, eventName = '.*', node, startBlock, endBlock) {
         node.log(`subscribe ${channelName} ${contractName} ${eventName}`);
         const network = await gateway.getNetwork(channelName);
         const channel = network.getChannel();
@@ -89,17 +90,24 @@ module.exports = function (RED) {
         eventHubs.forEach((eventHub) => {
             eventHub.connect(true);
             node.log('connected to event hub');
-            const eventHandler = eventHub.registerChaincodeEvent(contractName, eventName, (arg1) => {
+            const eventHandler = eventHub.registerChaincodeEvent(contractName, eventName, (arg1, blockNumber, txid, status) => {
                 node.log('got event ' + arg1.event_name + ' ' + arg1.payload);
+                //ENHANCE: here we can return block number (see register function params)
                 const msg = {
                     eventName: arg1.event_name,
                     payload: arg1.payload
+                    //ENHANCE : blockNumber: blockNumber
                 };
                 node.status({});
                 node.send(msg);
             }, (error) => {
                 node.log('error', error);
                 throw new Error(error.message);
+            }, {
+                //ENHANCE : Give the possibility to listen from/to specific blocks
+                startBlock: startBlock,
+            endBlock: endBlock,
+            disconnect: false
             });
 
             eventHandlers.push(eventHandler);
