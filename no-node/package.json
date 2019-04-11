@@ -6,6 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "dependencies": {
+    "fabric-client": "1.4.1"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/floriancastelain/node-red-contrib-fabric.git"
