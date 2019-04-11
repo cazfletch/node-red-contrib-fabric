@@ -14,7 +14,7 @@ const networkInfo = {
     peerName: "peer1",
     walletLocation: "./config/hfc-key-store",
     startBlock: 0,
-    endBlock: 70,
+    endBlock: 30,
     connectionProfile: JSON.parse(fs.readFileSync('./config/creds.json'))
 }
 
@@ -67,6 +67,7 @@ async function connectToPeer(identityName, channelName, orgName, peerName, conne
 
 }
 
+//TODO: Currently the eventHub does not stop itself after reaching the endBlock, find a way to stop it when it reaches the endBlock
 /**
    * Subscribe to an event, pass them into the callback for processing
    * @function subscribeToEvent
@@ -75,7 +76,7 @@ async function connectToPeer(identityName, channelName, orgName, peerName, conne
    * @param {string} chaincodeName The name of the chaincode
    * @param {string} eventName The name of the event
    * @param {int} startBlock The number of the block to start listenning
-   * @param {int} endBlock DO NOT USE YET
+   * @param {int} endBlock The last block to listen to. Afterwards, the listenner should stop
    * @param {function} eventCallback The function to execute when receiving an event
    */
 async function subscribeToEvent(peer, channel, chaincodeName, eventName, startBlock, endBlock, eventCallback) {
@@ -93,7 +94,9 @@ async function subscribeToEvent(peer, channel, chaincodeName, eventName, startBl
         console.log(error);
         throw new Error(error);
     }, {
-            startBlock: startBlock
+            startBlock: startBlock,
+            endBlock: endBlock,
+            disconnect: false
         });
     eventHub.connect(true);
 }
