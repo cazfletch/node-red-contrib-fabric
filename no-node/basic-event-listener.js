@@ -15,16 +15,42 @@ const networkInfo = {
     walletLocation: "./config/hfc-key-store",
     startBlock: 0,
     endBlock: 30,
-    connectionProfile: JSON.parse(fs.readFileSync('./config/creds.json'))
+    connectionProfile: JSON.parse(fs.readFileSync('./config/creds.json')),
+    query: {
+        chaincodeId: 'identity-manager',
+        fcn: 'query',
+        args: ['google.112031277188763102385']
+    },
+    richQuery: {
+        chaincodeId: 'identity-manager',
+        fcn: 'richQuery',
+        args: [
+            JSON.stringify({ "selector": { "email": "castelainflorian44@ibm.com" } })
+        ]
+    }
 }
 
-listenForEvent(networkInfo);
 
+richQueryChaincode(networkInfo);
+
+//listenForEvent(networkInfo);
+//queryChaincode(networkInfo);
+
+async function queryChaincode(networkInfo) {
+    var peerConnection = await connectToPeer(networkInfo.identityName, networkInfo.channelName, networkInfo.orgName, networkInfo.peerName, networkInfo.connectionProfile, networkInfo.walletLocation);
+    await queryWorldState(networkInfo.query, peerConnection.channel);
+}
 
 async function listenForEvent(networkInfo) {
     var peerConnection = await connectToPeer(networkInfo.identityName, networkInfo.channelName, networkInfo.orgName, networkInfo.peerName, networkInfo.connectionProfile, networkInfo.walletLocation);
     await subscribeToEvent(peerConnection.peer, peerConnection.channel, networkInfo.chaincodeName, networkInfo.eventName, networkInfo.startBlock, networkInfo.endBlock, handleEvent);
 }
+async function richQueryChaincode(networkInfo) {
+    var peerConnection = await connectToPeer(networkInfo.identityName, networkInfo.channelName, networkInfo.orgName, networkInfo.peerName, networkInfo.connectionProfile, networkInfo.walletLocation);
+    await richQueryWorldState(networkInfo.richQuery, peerConnection.channel);
+}
+
+
 /**
    * Connect to a peer of the blockchain network
    * @function connectToPeer
@@ -101,7 +127,37 @@ async function subscribeToEvent(peer, channel, chaincodeName, eventName, startBl
     eventHub.connect(true);
 }
 
+// Should be node.send()
 function handleEvent(event) {
     console.log("We do something with the event--------");
     console.log(event);
+}
+
+function handleQuery(response) {
+    console.log("QUERY RESPONSE ");
+    console.log(JSON.stringify(JSON.parse(Buffer.from(JSON.parse(response[0])).toString())));
+}
+function handleRichQuery(response) {
+    console.log("RICHQUERY RESPONSE ");
+    console.log(response.toString());
+}
+
+/**
+   * Query the ledger. Used to send QUERIES, NOT TRANSACTIONS
+   * Can be used for simple and rich queries
+   * @function queryWorldState
+   * @param {object} request The request, must contain the 'fcn', 'chaincodeId' and 'args'[] properties
+   * @param {object} channel The channel to query
+
+   */
+async function queryWorldState(request, channel) {
+    console.log(request);
+    var queryResponse = await channel.queryByChaincode(request);
+    handleQuery(queryResponse);
+}
+
+async function richQueryWorldState(request, channel) {
+    console.log(request);
+    var queryResponse = await channel.queryByChaincode(request);
+    handleRichQuery(queryResponse);
 }
