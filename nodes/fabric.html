@@ -93,6 +93,14 @@ limitations under the License.
         <label for="node-input-eventName"><i class="fa"></i>Event Name</label>
         <input type="text" id="node-input-eventName" placeholder=".*"/>
     </div>
+    <div class="form-row">
+        <label for="node-input-startBlock"><i class="fa"></i>Start Block</label>
+        <input type="text" id="node-input-startBlock" placeholder=".*"/>
+    </div>
+    <div class="form-row">
+        <label for="node-input-endBlock"><i class="fa"></i>End Block</label>
+        <input type="text" id="node-input-endBlock" placeholder=".*"/>
+    </div>
 </script>
 <script type="text/x-red" data-template-name="fabric-query">
     <div class="form-row">
@@ -114,14 +122,13 @@ limitations under the License.
         <label for="node-input-request"><i class="fa"></i>Request</label>
         <input type="text" id="node-input-request" placeholder=""/>
     </div>
-    
+
     <div class="form-row">
         <label for="node-input-contractName"><i class="fa"></i>Chaincode name</label>
         <input type="text" id="node-input-contractName" placeholder=""/>
     </div>
-    
-  
 </script>
+
 <script type="text/x-red" data-help-name="fabric-out">
   <p>Hyperledger Fabric output node. Submit or evaluate transactions</p>
   <p>The name of the transaction should be set like <code>msg.payload.transactionName</code></p>
@@ -132,7 +139,7 @@ limitations under the License.
     RED.nodes.registerType('fabric-out', {
         category : 'Hyperledger',
         color : '#E6E0F8',
-        paletteLabel : 'Hyperledger Fabric',
+        paletteLabel : 'Hyperledger Fabric - Out',
         defaults : {
             name : {value : ''},
             connection : {value : '', type : 'fabric-config'},
@@ -145,7 +152,7 @@ limitations under the License.
         icon : 'icon.png',
         align : 'right',
         label : function () {
-            return this.name || 'Hyperledger Fabric';
+            return this.name || 'Hyperledger Fabric - Out';
         }
     });
 </script>
@@ -162,7 +169,7 @@ limitations under the License.
     RED.nodes.registerType('fabric-mid', {
         category : 'Hyperledger',
         color : '#E6E0F8',
-        paletteLabel : 'Hyperledger Fabric',
+        paletteLabel : 'Hyperledger Fabric - Mid',
         defaults : {
             name : {value : ''},
             connection : {value : '', type : 'fabric-config'},
@@ -174,7 +181,7 @@ limitations under the License.
         outputs : 1,
         icon : 'icon.png',
         label : function () {
-            return this.name || 'Hyperledger Fabric';
+            return this.name || 'Hyperledger Fabric - Mid';
         }
     });
 </script>
@@ -183,54 +190,58 @@ limitations under the License.
   <p>Will create a message with the structure <code>{"eventName" : "myEvent", "payload": "myPayload"}</code></p>
   <p>The <code>payload</code> will be a buffer and you will need to deserialize the data downstream</p>
   <p>For example <code>msg.payload.toString()</code>
+  <p>The start block and end block are not required.</p>
 </script>
 <script type="text/javascript">
     RED.nodes.registerType('fabric-in', {
         category: 'Hyperledger',
         color: "#E6E0F8",
-        paletteLabel: "Hyperledger Fabric",
+        paletteLabel: "Hyperledger Fabric - In",
         defaults: {
             name: {value: ""},
             connection : {value : '', type : 'fabric-config'},
             channelName : {value : '', required : true},
             contractName : {value : '', required : true},
             eventName : {value : '.*', required : false},
+            startBlock: {value: '', type: 'num', required: false},
+            endBlock: {value: '', type: 'num', required: false}
         },
         inputs : 0,
         outputs : 1,
         icon : "icon.png",
         align : "left",
         label : function () {
-            return this.name || "Hyperledger Fabric";
+            return this.name || "Hyperledger Fabric - In";
         }
     });
 </script>
 <script type="text/x-red" data-help-name="fabric-query">
     <p>Hyperledger Fabric query node. Query the ledger world state</p>
-      <p>TO EDIT <code>msg.payload.transactionName</code></p>
-      <p>TO EDIT<code>msg.payload.args</code>. The arguments should be an array of strings</p>
-      <p>TO EDITe <code>{"transactionName: "myTransaction", "args": ["arg1", "arg2"]}</code></p>
-      <p>TO EDIT<code>msg.payload</></p>
-      <p>TO EDIT<code>payload</code> will be a buffer and you will need to deserialize the data downstream</p>
-      <p>TO EDIT <code>msg.payload.toString()</code>
-    </script>
+    <p>This node returns a result, even if it is a chaincode error.</p>
+    <p>Any input payload will overwrite the manual configuration</p>
+    <p>The <code>request</code> parameter should be the following:</p>
+    <p>Simple query: <code>{"chaincodeId":"chaincodeName","fcn":"query","args":["myarg"]}</code></p>
+    <p>Rich query: <code> {"chaincodeId":"chaincodeName","fcn":"richQuery","args":["{ \"selector\": { \"field\": \"fieldValue\" } }"]}</code></p>
+    <p>Notice that for the rich query, the arg has been escaped. You must do it before sending it to this node</p>
+    <p>Remark: change the <code>fcn</code> property to suite the name of the query function you have in your chaincode</p>
+</script>
 <script type="text/javascript">
         RED.nodes.registerType('fabric-query', {
             category : 'Hyperledger',
             color : '#E6E0F8',
-            paletteLabel : 'Hyperledger Fabric',
+            paletteLabel : 'Hyperledger Fabric - Query',
             defaults : {
                 name : {value : ''},
                 connection : {value : '', type : 'fabric-config'},
-                channelName : {value : '', required : true},
-                request: {value: '', required: true},
-                contractName: {value:'', required: true}
+                channelName : {value : '', required : false},
+                request: {value: '', required: false},
+                contractName: {value:'', required: false}
                 },
             inputs : 1,
             outputs : 1,
             icon : 'icon.png',
             label : function () {
-                return this.name || 'Hyperledger Fabric';
+                return this.name || 'Hyperledger Fabric - Query';
             }
         });
 </script>

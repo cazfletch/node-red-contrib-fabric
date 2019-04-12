@@ -156,7 +156,7 @@ module.exports = function (RED) {
 
             } catch (error) {
                 node.status({ fill: 'red', shape: 'dot', text: 'Error' });
-                node.error('Error: ' + error.message);
+                node.error('Error: ' + error.message, msg);
             }
         });
 
@@ -200,7 +200,7 @@ module.exports = function (RED) {
 
             } catch (error) {
                 node.status({ fill: 'red', shape: 'dot', text: 'Error' });
-                node.error('Error: ' + error.message);
+                node.error('Error: ' + error.message, msg);
             }
         });
 
@@ -231,7 +231,7 @@ module.exports = function (RED) {
             })
             .catch((error) => {
                 node.status({ fill: 'red', shape: 'dot', text: 'Error' });
-                node.error('Error: ' + error.message);
+                node.error('Error: ' + error.message, msg);
             });
 
 
@@ -281,10 +281,14 @@ module.exports = function (RED) {
         node.on('input', async function (msg) {
             this.connection = RED.nodes.getNode(config.connection);
             try {
-                await connect(node.connection.identityName, config.channelName, config.contractName, node);
-                const network = await gateway.getNetwork(config.channelName);
+                const queryConfig = assembleQueryData(msg.payload, config);
+                await connect(node.connection.identityName, 
+                    queryConfig.channelName,
+                    queryConfig.contractName, 
+                    node);
+                const network = await gateway.getNetwork(queryConfig.channelName);
                 const channel = network.getChannel();
-                const inputRequestAsJson = JSON.parse(config.request);
+                const inputRequestAsJson = queryConfig.request;
                 var request = {
                     chaincodeId: inputRequestAsJson.chaincodeId,
                     fcn: inputRequestAsJson.fcn,
@@ -299,7 +303,7 @@ module.exports = function (RED) {
 
             } catch (error) {
                 node.status({ fill: 'red', shape: 'dot', text: 'Error' });
-                node.error('Error: ' + error.message);
+                node.error('Error: ' + error.message, msg);
             } finally {
                 gateway.disconnect();
                 node.log("disconnected gateway");
@@ -310,9 +314,26 @@ module.exports = function (RED) {
             node.status({});
         });
     }
-
     RED.nodes.registerType('fabric-query', FabricQueryNode);
 
-
+    function assembleQueryData(payload, config) {
+        var data = {};
+        if (typeof payload.channelName === "string"){
+            data.channelName = payload.channelName;
+        } else {
+            data.channelName = config.channelName;
+        }
+        if (typeof payload.contractName === "string") {
+            data.contractName = payload.contractName;
+        } else {
+            data.channelName = config.channelName;
+        }
+        if (typeof payload.request === "object") {
+            data.request = payload.request;
+        } else {
+            data.request = config.request;
+        }
+        return data;
+    }
 };
 
