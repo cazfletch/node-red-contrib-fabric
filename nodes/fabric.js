@@ -29,7 +29,7 @@ module.exports = function (RED) {
      * @param {string}contractName contract
      * @returns {PromiseLike<Contract | never>} promise
      */
-    async function connect (identityName, channelName, contractName, node) {
+    async function connect(identityName, channelName, contractName, node) {
         node.log(`connect ${identityName} ${channelName} ${contractName}`);
         const parsedProfile = JSON.parse(node.connection.connectionProfile);
         const client = await fabricClient.loadFromConfig(parsedProfile);
@@ -39,10 +39,10 @@ module.exports = function (RED) {
         const wallet = new fabricNetwork.FileSystemWallet(node.connection.walletLocation);
         node.log('got wallet');
         const options = {
-            wallet : wallet,
-            identity : identityName,
-            discovery : {
-                asLocalhost : true
+            wallet: wallet,
+            identity: identityName,
+            discovery: {
+                asLocalhost: true
             }
         };
 
@@ -52,7 +52,7 @@ module.exports = function (RED) {
         node.log('got network');
         const contract = await network.getContract(contractName);
         node.log('got contract');
-        return contract;
+        return { contract: contract, network: network };
     }
 
     /**
@@ -62,7 +62,7 @@ module.exports = function (RED) {
      * @param {Node} node node
      * @returns {Promise<Buffer>} promise
      */
-    function submit (contract, payload, node) {
+    function submit(contract, payload, node) {
         node.log(`submit ${payload.transactionName} ${payload.args}`);
         return contract.submitTransaction(payload.transactionName, ...payload.args);
     }
@@ -74,13 +74,13 @@ module.exports = function (RED) {
      * @param {Node} node node
      * @returns {Promise<Buffer>} promise
      */
-    function evaluate (contract, payload, node) {
+    function evaluate(contract, payload, node) {
         node.log(`evaluate ${payload.transactionName} ${payload.args}`);
         return contract.submitTransaction(payload.transactionName, ...payload.args);
     }
 
     // ENHANCE : Updated param list
-    async function subscribeToEvents (channelName, contractName, eventName = '.*', node, startBlock, endBlock) {
+    async function subscribeToEvents(channelName, contractName, eventName = '.*', node, startBlock, endBlock) {
         node.log(`subscribe ${channelName} ${contractName} ${eventName}`);
         const network = await gateway.getNetwork(channelName);
         const channel = network.getChannel();
@@ -90,13 +90,15 @@ module.exports = function (RED) {
         eventHubs.forEach((eventHub) => {
             eventHub.connect(true);
             node.log('connected to event hub');
-            const eventHandler = eventHub.registerChaincodeEvent(contractName, eventName, (arg1, blockNumber, txid, status) => {
-                node.log('got event ' + arg1.event_name + ' ' + arg1.payload);
+            const eventHandler = eventHub.registerChaincodeEvent(contractName, eventName, (event, blockNumber, txid, status) => {
+                node.log('got event ' + event.event_name + ' ' + event.payload);
                 //ENHANCE: here we can return block number (see register function params)
                 const msg = {
-                    eventName: arg1.event_name,
-                    payload: arg1.payload
-                    //ENHANCE : blockNumber: blockNumber
+                    eventName: event.event_name,
+                    payload: event.payload,
+                    blockNumber: blockNumber,
+                    txid: txid,
+                    status: status
                 };
                 node.status({});
                 node.send(msg);
@@ -104,11 +106,11 @@ module.exports = function (RED) {
                 node.log('error', error);
                 throw new Error(error.message);
             }, {
-                //ENHANCE : Give the possibility to listen from/to specific blocks
-                startBlock: startBlock,
-            endBlock: endBlock,
-            disconnect: false
-            });
+                    //ENHANCE : Give the possibility to listen from/to specific blocks
+                    startBlock: startBlock,
+                    endBlock: endBlock,
+                    disconnect: false
+                });
 
             eventHandlers.push(eventHandler);
             node.log('added event handler to list');
@@ -119,7 +121,7 @@ module.exports = function (RED) {
      *
      * @param payload
      */
-    function checkPayload (payload) {
+    function checkPayload(payload) {
         if (!payload.transactionName || typeof payload.transactionName !== 'string') {
             throw new Error('message should contain a transaction name of type string');
         }
@@ -134,7 +136,7 @@ module.exports = function (RED) {
      * @param {object} config The configuration from the node
      * @constructor
      */
-    function FabricOutNode (config) {
+    function FabricOutNode(config) {
         let node = this;
         RED.nodes.createNode(node, config);
 
@@ -145,15 +147,15 @@ module.exports = function (RED) {
                 node.log('using connection: ' + identityName);
                 node.log('checking payload ' + util.inspect(msg.payload, false, null));
                 checkPayload(msg.payload);
-                const contract = await connect(identityName, config.channelName, config.contractName, node);
+                const connectData = await connect(identityName, config.channelName, config.contractName, node);
                 if (config.actionType === 'submit') {
-                    await submit(contract, msg.payload, node)
+                    await submit(connectData.contract, msg.payload, node)
                 } else {
-                    await evaluate(contract, msg.payload, node);
+                    await evaluate(connectData.contract, msg.payload, node);
                 }
 
             } catch (error) {
-                node.status({fill : 'red', shape : 'dot', text : 'Error'});
+                node.status({ fill: 'red', shape: 'dot', text: 'Error' });
                 node.error('Error: ' + error.message);
             }
         });
@@ -171,7 +173,7 @@ module.exports = function (RED) {
      * @param {object} config The configuration set on the node
      * @constructor
      */
-    function FabricMidNode (config) {
+    function FabricMidNode(config) {
         let node = this;
         RED.nodes.createNode(node, config);
 
@@ -183,12 +185,12 @@ module.exports = function (RED) {
                 node.log('using connection: ' + identityName);
                 node.log('checking payload ' + util.inspect(msg.payload, false, null));
                 checkPayload(msg.payload);
-                const contract = await connect(identityName, config.channelName, config.contractName, node);
+                const connectData = await connect(identityName, config.channelName, config.contractName, node);
                 let result;
                 if (config.actionType === 'submit') {
-                    result = await submit(contract, msg.payload, node);
+                    result = await submit(connectData.contract, msg.payload, node);
                 } else {
-                    result = await evaluate(contract, msg.payload, node);
+                    result = await evaluate(connectData.contract, msg.payload, node);
                 }
 
                 node.log('got a result ' + result);
@@ -197,7 +199,7 @@ module.exports = function (RED) {
                 node.send(msg);
 
             } catch (error) {
-                node.status({fill : 'red', shape : 'dot', text : 'Error'});
+                node.status({ fill: 'red', shape: 'dot', text: 'Error' });
                 node.error('Error: ' + error.message);
             }
         });
@@ -214,7 +216,7 @@ module.exports = function (RED) {
      * @param {object} config The configuration set on the node
      * @constructor
      */
-    function FabricInNode (config) {
+    function FabricInNode(config) {
         let node = this;
         RED.nodes.createNode(node, config);
 
@@ -228,15 +230,15 @@ module.exports = function (RED) {
                 return subscribeToEvents(config.channelName, config.contractName, config.eventName, node);
             })
             .catch((error) => {
-                node.status({fill : 'red', shape : 'dot', text : 'Error'});
+                node.status({ fill: 'red', shape: 'dot', text: 'Error' });
                 node.error('Error: ' + error.message);
             });
 
 
         node.on('close', () => {
-            node.status({fill : 'red', shape : 'ring', text : 'disconnected'});
+            node.status({ fill: 'red', shape: 'ring', text: 'disconnected' });
             node.log('close');
-            if(network) {
+            if (network) {
                 node.log('got network so need to unregister');
                 const channel = network.getChannel();
                 const eventHubs = channel.getChannelEventHubsForOrg();
@@ -248,7 +250,7 @@ module.exports = function (RED) {
                 });
             }
 
-            if(gateway) {
+            if (gateway) {
                 node.log('got gateway so disconnect');
                 gateway.disconnect();
             }
@@ -258,4 +260,59 @@ module.exports = function (RED) {
     }
 
     RED.nodes.registerType('fabric-in', FabricInNode);
+
+
+    //ENHANCE
+    // query node
+
+    /**
+     * Create a query node
+     * Returns the query result as is
+     * In case of rich queries, do not forget to stringify the arg (selector)
+     * Simple query example: {"chaincodeId":"chaincodeName","fcn":"query","args":["myarg"]}
+     * Rich query example: {"chaincodeId":"chaincodeName","fcn":"richQuery","args":["{ \"selector\": { \"field\": \"fieldValue\" } }"]}
+     * @param {object} config The configuration set on the node
+     * @constructor
+     */
+    function FabricQueryNode(config) {
+        let node = this;
+        RED.nodes.createNode(node, config);
+
+        node.on('input', async function (msg) {
+            this.connection = RED.nodes.getNode(config.connection);
+            try {
+                await connect(node.connection.identityName, config.channelName, config.contractName, node);
+                const network = await gateway.getNetwork(config.channelName);
+                const channel = network.getChannel();
+                const inputRequestAsJson = JSON.parse(config.request);
+                var request = {
+                    chaincodeId: inputRequestAsJson.chaincodeId,
+                    fcn: inputRequestAsJson.fcn,
+                    args: []
+                };
+                for (let i = 0; i < inputRequestAsJson.args.length; i++) {
+                    request.args.push(inputRequestAsJson.args[i]);
+                }
+                msg.payload = await channel.queryByChaincode(request);
+                node.status({});
+                node.send(msg);
+
+            } catch (error) {
+                node.status({ fill: 'red', shape: 'dot', text: 'Error' });
+                node.error('Error: ' + error.message);
+            } finally {
+                gateway.disconnect();
+                node.log("disconnected gateway");
+            }
+        });
+
+        node.on('close', () => {
+            node.status({});
+        });
+    }
+
+    RED.nodes.registerType('fabric-query', FabricQueryNode);
+
+
 };
+

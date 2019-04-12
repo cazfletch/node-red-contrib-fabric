@@ -11,7 +11,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-
 <script type="text/x-red" data-template-name="fabric-out">
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
@@ -41,7 +40,6 @@ limitations under the License.
         </select>
     </div>
 </script>
-
 <script type="text/x-red" data-template-name="fabric-mid">
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
@@ -71,7 +69,6 @@ limitations under the License.
         </select>
     </div>
 </script>
-
 <script type="text/x-red" data-template-name="fabric-in">
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
@@ -97,14 +94,40 @@ limitations under the License.
         <input type="text" id="node-input-eventName" placeholder=".*"/>
     </div>
 </script>
+<script type="text/x-red" data-template-name="fabric-query">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
+        <input type="text" id="node-input-name" data-i18n="[placeholder]node-red:common.label.name">
+    </div>
 
+    <div class="form-row">
+        <label for="node-input-connection"><i class="fa"></i>Connection</label>
+        <input type="select" id="node-input-connection" placeholder="Connection"/>
+    </div>
+
+     <div class="form-row">
+        <label for="node-input-channelName"><i class="fa"></i>Channel Name</label>
+        <input type="text" id="node-input-channelName" placeholder=""/>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-request"><i class="fa"></i>Request</label>
+        <input type="text" id="node-input-request" placeholder=""/>
+    </div>
+    
+    <div class="form-row">
+        <label for="node-input-contractName"><i class="fa"></i>Chaincode name</label>
+        <input type="text" id="node-input-contractName" placeholder=""/>
+    </div>
+    
+  
+</script>
 <script type="text/x-red" data-help-name="fabric-out">
   <p>Hyperledger Fabric output node. Submit or evaluate transactions</p>
   <p>The name of the transaction should be set like <code>msg.payload.transactionName</code></p>
   <p>The arguments for the transaction should be set like <code>msg.payload.args</code>. The arguments should be an array of strings</p>
   <p>For example <code>{"transactionName: "myTransaction", "args": ["arg1", "arg2"]}</code></p>
 </script>
-
 <script type="text/javascript">
     RED.nodes.registerType('fabric-out', {
         category : 'Hyperledger',
@@ -126,7 +149,6 @@ limitations under the License.
         }
     });
 </script>
-
 <script type="text/x-red" data-help-name="fabric-mid">
 <p>Hyperledger Fabric mid node. Submit or evaluate transactions</p>
   <p>The name of the transaction should be set like <code>msg.payload.transactionName</code></p>
@@ -136,7 +158,6 @@ limitations under the License.
   <p>The <code>payload</code> will be a buffer and you will need to deserialize the data downstream</p>
   <p>For example <code>msg.payload.toString()</code>
 </script>
-
 <script type="text/javascript">
     RED.nodes.registerType('fabric-mid', {
         category : 'Hyperledger',
@@ -157,14 +178,12 @@ limitations under the License.
         }
     });
 </script>
-
 <script type="text/x-red" data-help-name="fabric-in">
   <p>Hyperledger Fabric input node. Subscribe to events emitted by a blockchain</p>.
   <p>Will create a message with the structure <code>{"eventName" : "myEvent", "payload": "myPayload"}</code></p>
   <p>The <code>payload</code> will be a buffer and you will need to deserialize the data downstream</p>
   <p>For example <code>msg.payload.toString()</code>
 </script>
-
 <script type="text/javascript">
     RED.nodes.registerType('fabric-in', {
         category: 'Hyperledger',
@@ -186,4 +205,32 @@ limitations under the License.
         }
     });
 </script>
-
+<script type="text/x-red" data-help-name="fabric-query">
+    <p>Hyperledger Fabric query node. Query the ledger world state</p>
+      <p>TO EDIT <code>msg.payload.transactionName</code></p>
+      <p>TO EDIT<code>msg.payload.args</code>. The arguments should be an array of strings</p>
+      <p>TO EDITe <code>{"transactionName: "myTransaction", "args": ["arg1", "arg2"]}</code></p>
+      <p>TO EDIT<code>msg.payload</></p>
+      <p>TO EDIT<code>payload</code> will be a buffer and you will need to deserialize the data downstream</p>
+      <p>TO EDIT <code>msg.payload.toString()</code>
+    </script>
+<script type="text/javascript">
+        RED.nodes.registerType('fabric-query', {
+            category : 'Hyperledger',
+            color : '#E6E0F8',
+            paletteLabel : 'Hyperledger Fabric',
+            defaults : {
+                name : {value : ''},
+                connection : {value : '', type : 'fabric-config'},
+                channelName : {value : '', required : true},
+                request: {value: '', required: true},
+                contractName: {value:'', required: true}
+                },
+            inputs : 1,
+            outputs : 1,
+            icon : 'icon.png',
+            label : function () {
+                return this.name || 'Hyperledger Fabric';
+            }
+        });
+</script>
