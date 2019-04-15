@@ -135,6 +135,10 @@ limitations under the License.
         <label for="node-input-walletLocation"><i class="fa"></i>Wallet location</label>
         <input type="text" id="node-input-walletLocation" placeholder=".*"/>
     </div>
+    <div class="form-row">
+        <label for="node-input-timeout"><i class="fa"></i>timeout</label>
+        <input type="text" id="node-input-timeout" placeholder=".*"/>
+    </div>
 </script>
 <script type="text/x-red" data-template-name="fabric-query">
     <div class="form-row">
@@ -267,7 +271,8 @@ limitations under the License.
               endBlock: {value: -1, type: 'num', required: false},
               orgName: {value: '', type: 'text', required: true},
               peerName: {value: '', type: 'text', required: true},
-              walletLocation: {value:'', type:'text', required: true}
+              walletLocation: {value:'', type:'text', required: true},
+              timeout: {value: '', type: 'text', required: false}
               
           },
           inputs : 1,

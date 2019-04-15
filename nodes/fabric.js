@@ -128,7 +128,7 @@ module.exports = function (RED) {
  * @returns {Promise<Buffer>} promise
  */
     async function subscribeToEvent(peer, channel, chaincodeName,
-        eventName, startBlock, endBlock, node, msg) {
+        eventName, startBlock, endBlock, node, msg, timeout = true) {
         let eventHub = channel.newChannelEventHub(peer);
         console.log(startBlock);
         startBlock = parseInt(startBlock);
@@ -150,15 +150,20 @@ module.exports = function (RED) {
         //options.unregister = true;
         var event = null;
         var eventList = [];
-        var eventTimeout = setTimeout(() => {
-            if (event) {
-                eventHub.unregisterChaincodeEvent(event);
-                node.log("Unregistered chaincode event");
-                var data = { eventList: eventList };
-                node.send(data);
-            }
-            node.log("Timed out for chaincode event (Expected)");
-        }, 2000);
+        console.log(timeout)
+        timeout = timeout === "true" ? true: false;
+        if (timeout) {
+            console.log("We set the timeout here");
+            var eventTimeout = setTimeout(() => {
+                if (event) {
+                    eventHub.unregisterChaincodeEvent(event);
+                    node.log("Unregistered chaincode event");
+                    var data = { eventList: eventList };
+                    node.send(data);
+                }
+                node.log("Timed out for chaincode event (Expected)");
+            }, 2000);
+        }
         node.log("Event listener options: " + JSON.stringify(options));
         event = eventHub.registerChaincodeEvent(chaincodeName, eventName, (event, blockNumber, txid, status) => {
             var msg = {
@@ -167,10 +172,11 @@ module.exports = function (RED) {
                 txid: txid,
                 status: status
             };
-            eventList.push(msg);
+
             // refresh timeout because we want ALL the events in the block interval
             // not only the ones in the time interval
-            eventTimeout.refresh();
+            if (timeout) { eventList.push(msg); eventTimeout.refresh(); }
+            else { node.send(msg); }
             node.status({});
             // node.send(msg);
         }, (error) => {
@@ -392,11 +398,12 @@ module.exports = function (RED) {
                 const eventName = typeof msg.payload.eventName === "string" ? msg.payload.eventName : config.eventName;
                 const startBlock = typeof msg.payload.startBlock === "undefined" ? config.startBlock : msg.payload.startBlock;
                 const endBlock = typeof msg.payload.endBlock === "undefined" ? config.endBlock : msg.payload.endBlock;
+                const timeout = typeof msg.payload.timeout === "undefined" ? config.timeout : msg.payload.timeout;
                 connectToPeer(identityName, channelName, orgName,
                     peerName, connectionProfile, walletLocation)
                     .then((networkData) => {
                         return subscribeToEvent(networkData.peer, networkData.channel,
-                            chaincodeName, eventName, startBlock, endBlock, node, msg)
+                            chaincodeName, eventName, startBlock, endBlock, node, msg, timeout)
                     }).catch((error) => {
                         console.log(error);
                         node.status({ fill: 'red', shape: 'dot', text: 'Error' });
