@@ -288,59 +288,6 @@ module.exports = function (RED) {
      * @param {object} config The configuration set on the node
      * @constructor
      */
-    // function FabricInNode(config) {
-    //     let node = this;
-    //     RED.nodes.createNode(node, config);
-
-    //     this.connection = RED.nodes.getNode(config.connection);
-
-    //     // node.log('config ' + util.inspect(node.connection, false, null));
-    //     const identityName = node.connection.identityName;
-    //     node.log('using connection: ' + identityName);
-    //     connect(identityName, config.channelName, config.contractName, node)
-    //         .then(() => {
-    //             console.log(JSON.stringify(config));
-    //             return eventTEST(config.channelName, config.contractName, config.eventName, node, config.startBlock, config.endBlock);
-    //         })
-    //         .catch((error) => {
-    //             node.status({ fill: 'red', shape: 'dot', text: 'Error' });
-    //             node.error('Error: ' + error.message);
-    //         });
-
-
-    //     node.on('close', () => {
-    //         node.status({ fill: 'red', shape: 'ring', text: 'disconnected' });
-    //         node.log('close');
-    //         if (network) {
-    //             node.log('got network so need to unregister');
-    //             const channel = network.getChannel();
-    //             const eventHubs = channel.getChannelEventHubsForOrg();
-    //             eventHubs.forEach((eventHub) => {
-    //                 eventHandlers.forEach((eventHandler) => {
-    //                     node.log('unregistering from chaincode event');
-    //                     eventHub.unregisterChaincodeEvent(eventHandler);
-    //                 });
-    //             });
-    //         }
-
-    //         if (gateway) {
-    //             node.log('got gateway so disconnect');
-    //             gateway.disconnect();
-    //         }
-
-    //         node.log('finished close');
-    //     });
-    // }
-
-    // RED.nodes.registerType('fabric-in', FabricInNode);
-
-
-
-    /**
-   * Create an in node
-   * @param {object} config The configuration set on the node
-   * @constructor
-   */
     function FabricInNode(config) {
         let node = this;
         RED.nodes.createNode(node, config);
@@ -350,36 +297,100 @@ module.exports = function (RED) {
         // node.log('config ' + util.inspect(node.connection, false, null));
         const identityName = node.connection.identityName;
         node.log('using connection: ' + identityName);
-        const channelName = config.channelName;
-        const orgName = config.orgName;
-        const walletLocation = node.connection.walletLocation;
-        const connectionProfile = JSON.parse(node.connection.connectionProfile);
-        const peerName = config.peerName;
-        const chaincodeName = config.contractName;
-        const eventName = config.eventName;
-        const startBlock = config.startBlock;
-        const endBlock = config.endBlock;
-        connectToPeer(identityName, channelName, orgName,
-            peerName, connectionProfile, walletLocation)
-            .then((networkData) => {
-                return subscribeToEvent(networkData.peer, networkData.channel,
-                    chaincodeName, eventName, startBlock, endBlock, node)
-            }).catch((error) => {
-                console.log(error);
+        connect(identityName, config.channelName, config.contractName, node)
+            .then(() => {
+                console.log(JSON.stringify(config));
+                return subscribeToEvents(config.channelName, config.contractName, config.eventName, node, config.startBlock, config.endBlock);
+            })
+            .catch((error) => {
                 node.status({ fill: 'red', shape: 'dot', text: 'Error' });
                 node.error('Error: ' + error.message);
             });
+
+
+        node.on('close', () => {
+            node.status({ fill: 'red', shape: 'ring', text: 'disconnected' });
+            node.log('close');
+            if (network) {
+                node.log('got network so need to unregister');
+                const channel = network.getChannel();
+                const eventHubs = channel.getChannelEventHubsForOrg();
+                eventHubs.forEach((eventHub) => {
+                    eventHandlers.forEach((eventHandler) => {
+                        node.log('unregistering from chaincode event');
+                        eventHub.unregisterChaincodeEvent(eventHandler);
+                    });
+                });
+            }
+
+            if (gateway) {
+                node.log('got gateway so disconnect');
+                gateway.disconnect();
+            }
+
+            node.log('finished close');
+        });
     }
 
     RED.nodes.registerType('fabric-in', FabricInNode);
 
 
+
+    /**
+   * Create an in node
+   * @param {object} config The configuration set on the node
+   * @constructor
+   */
+    function FabricEventList(config) {
+        let node = this;
+        RED.nodes.createNode(node, config);
+
+        node.on('input', async function (msg) {
+            this.connection = RED.nodes.getNode(config.connection);
+            try {
+                // node.log('config ' + util.inspect(node.connection, false, null));
+                const identityName = node.connection.identityName;
+                node.log('using connection: ' + identityName);
+                const channelName = config.channelName;
+                const orgName = config.orgName;
+                const walletLocation = config.walletLocation;
+                const connectionProfile = JSON.parse(node.connection.connectionProfile);
+                const peerName = config.peerName;
+                const chaincodeName = config.contractName;
+                const eventName = config.eventName;
+                const startBlock = config.startBlock;
+                const endBlock = config.endBlock;
+                connectToPeer(identityName, channelName, orgName,
+                    peerName, connectionProfile, walletLocation)
+                    .then((networkData) => {
+                        return subscribeToEvent(networkData.peer, networkData.channel,
+                            chaincodeName, eventName, startBlock, endBlock, node, msg)
+                    }).catch((error) => {
+                        console.log(error);
+                        node.status({ fill: 'red', shape: 'dot', text: 'Error' });
+                        node.error('Error: ' + error.message);
+                    });
+            } catch (error) {
+                node.status({ fill: 'red', shape: 'dot', text: 'Error' });
+                node.error('Error: ' + error.message, msg);
+            }
+        });
+
+
+
+
+    }
+
+    RED.nodes.registerType('fabric-event-list', FabricEventList);
+
+
     async function subscribeToEvent(peer, channel, chaincodeName,
-        eventName, startBlock, endBlock, node) {
+        eventName, startBlock, endBlock, node, msg) {
         let eventHub = channel.newChannelEventHub(peer);
         startBlock = parseInt(startBlock);
         endBlock = parseInt(endBlock);
         var options = {};
+        // In case the user did not provide the field
         if (isNaN(startBlock)) {
             options.startBlock = 0;
         } else {
@@ -387,23 +398,41 @@ module.exports = function (RED) {
         }
         if (!isNaN(endBlock)) {
             options.endBlock = endBlock;
+            //https://jira.hyperledger.org/browse/FABN-1207
             options.disconnect = false;
         }
-        console.log(options);
-        var event = eventHub.registerChaincodeEvent(chaincodeName, eventName, (event, blockNumber, txid, status) => {
+        //options.unregister = true;
+        var event= null;
+        var eventList = [];
+        var eventTimeout = setTimeout(() => {
+            if (event) {
+                eventHub.unregisterChaincodeEvent(event);
+                node.log("Unregistered chaincode event");
+                var data = {eventList: eventList};
+                node.send(data);
+            }
+            node.log("Timed out for chaincode event (Expected)");
+        }, 2000);
+
+        event = eventHub.registerChaincodeEvent(chaincodeName, eventName, (event, blockNumber, txid, status) => {
             var msg = {
                 payload: event.payload.toString('utf8'),
                 blockNumber: blockNumber,
                 txid: txid,
                 status: status
             };
+            eventList.push(msg);
+            // refresh timeout because we want ALL the events in the block interval
+            // not only the ones in the time interval
+            eventTimeout.refresh();
             node.status({});
-            node.send(msg);
+           // node.send(msg);
         }, (error) => {
             console.log(error);
-            throw new Error(error);
+            node.error(error, msg);
         }, options);
         eventHub.connect(true);
+        node.log("Registered event listener");
     }
 
     async function connectToPeer(identityName, channelName,

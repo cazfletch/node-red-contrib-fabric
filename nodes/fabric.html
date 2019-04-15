@@ -110,6 +110,51 @@ limitations under the License.
         <input type="text" id="node-input-peerName" placeholder=".*"/>
     </div>
 </script>
+<script type="text/x-red" data-template-name="fabric-event-list">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
+        <input type="text" id="node-input-name" data-i18n="[placeholder]node-red:common.label.name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-connection"><i class="fa"></i>Connection</label>
+        <input type="select" id="node-input-connection" placeholder="Connection"/>
+    </div>
+
+     <div class="form-row">
+        <label for="node-input-channelName"><i class="fa"></i>Channel Name</label>
+        <input type="text" id="node-input-channelName" placeholder=""/>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-contractName"><i class="fa"></i>Contract Name</label>
+        <input type="text" id="node-input-contractName" placeholder=""/>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-eventName"><i class="fa"></i>Event Name</label>
+        <input type="text" id="node-input-eventName" placeholder=".*"/>
+    </div>
+    <div class="form-row">
+        <label for="node-input-startBlock"><i class="fa"></i>Start Block</label>
+        <input type="text" id="node-input-startBlock" placeholder=".*"/>
+    </div>
+    <div class="form-row">
+        <label for="node-input-endBlock"><i class="fa"></i>End Block</label>
+        <input type="text" id="node-input-endBlock" placeholder=".*"/>
+    </div>
+    <div class="form-row">
+        <label for="node-input-orgName"><i class="fa"></i>Org name</label>
+        <input type="text" id="node-input-orgName" placeholder=".*"/>
+    </div>
+    <div class="form-row">
+        <label for="node-input-peerName"><i class="fa"></i>Peer name</label>
+        <input type="text" id="node-input-peerName" placeholder=".*"/>
+    </div>
+    <div class="form-row">
+        <label for="node-input-walletLocation"><i class="fa"></i>Wallet location</label>
+        <input type="text" id="node-input-walletLocation" placeholder=".*"/>
+    </div>
+</script>
 <script type="text/x-red" data-template-name="fabric-query">
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
@@ -226,6 +271,40 @@ limitations under the License.
         }
     });
 </script>
+<script type="text/x-red" data-help-name="fabric-event-list">
+    <p>Hyperledger Fabric input node. Subscribe to events emitted by a blockchain</p>.
+    <p>Will create a message with the structure <code>{"eventName" : "myEvent", "payload": "myPayload"}</code></p>
+    <p>The <code>payload</code> will be a buffer and you will need to deserialize the data downstream</p>
+    <p>For example <code>msg.payload.toString()</code>
+    <p>The start block and end block are not required.</p>
+  </script>
+  <script type="text/javascript">
+      RED.nodes.registerType('fabric-event-list', {
+          category: 'Hyperledger',
+          color: "#E6E0F8",
+          paletteLabel: "Hyperledger Fabric - Event list",
+          defaults: {
+              name: {value: ""},
+              connection : {value : '', type : 'fabric-config'},
+              channelName : {value : '', required : true},
+              contractName : {value : '', required : true},
+              eventName : {value : '.*', required : false},
+              startBlock: {value: -1, type: 'num', required: false},
+              endBlock: {value: -1, type: 'num', required: false},
+              orgName: {value: '', type: 'text', required: true},
+              peerName: {value: '', type: 'text', required: true},
+              walletLocation: {value:'', type:'text', required: true}
+              
+          },
+          inputs : 1,
+          outputs : 1,
+          icon : "icon.png",
+          align : "left",
+          label : function () {
+              return this.name || "Hyperledger Fabric - Event list";
+          }
+      });
+  </script>
 <script type="text/x-red" data-help-name="fabric-query">
     <p>Hyperledger Fabric query node. Query the ledger world state</p>
     <p>This node returns a result, even if it is a chaincode error.</p>
