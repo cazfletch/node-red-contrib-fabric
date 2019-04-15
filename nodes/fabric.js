@@ -18,7 +18,9 @@ module.exports = function (RED) {
     const fabricNetwork = require('fabric-network');
     const fabricClient = require('fabric-client');
 
-    const eventHandlers = [];
+    var eventHubs = [];
+    var eventHandlers = [];
+    //const eventHandlers = [];
     let gateway = new fabricNetwork.Gateway();
     let network;
 
@@ -80,7 +82,7 @@ module.exports = function (RED) {
     }
 
     // ENHANCE : Updated param list
-    async function subscribeToEvents(channelName, contractName, eventName = '.*', node, startBlock, endBlock) {
+    async function subscribeToEvents(channelName, contractName, eventName = '.*', node) {
         node.log(`subscribe ${channelName} ${contractName} ${eventName}`);
         const network = await gateway.getNetwork(channelName);
         const channel = network.getChannel();
@@ -92,7 +94,6 @@ module.exports = function (RED) {
             node.log('connected to event hub');
             const eventHandler = eventHub.registerChaincodeEvent(contractName, eventName, (event, blockNumber, txid, status) => {
                 node.log('got event ' + event.event_name + ' ' + event.payload);
-                //ENHANCE: here we can return block number (see register function params)
                 const msg = {
                     eventName: event.event_name,
                     payload: event.payload,
@@ -105,17 +106,88 @@ module.exports = function (RED) {
             }, (error) => {
                 node.log('error', error);
                 throw new Error(error.message);
-            }, {
-                    //ENHANCE : Give the possibility to listen from/to specific blocks
-                    startBlock: startBlock,
-                    endBlock: endBlock,
-                    disconnect: false
-                });
+            }, {});
 
             eventHandlers.push(eventHandler);
             node.log('added event handler to list');
         });
     }
+
+    async function eventTEST(channelName, contractName, eventName = '.*', node, startBlock = -1, endBlock = -1) {
+        node.log(`subscribe ${channelName} ${contractName} ${eventName}`);
+        const network = await gateway.getNetwork(channelName);
+        const channel = network.getChannel();
+        node.log('got channel');
+
+        var eventHub = channel.getChannelEventHub('org1-peer1');
+
+
+
+
+
+        // const eventHubs = channel.getChannelEventHubsForOrg();
+        // node.log('got event hubs');
+        // __________________
+        console.log("START BLOCK BEFORE " + startBlock);
+        console.log("ENDBLOCK BEFORE " + endBlock);
+        const options = {};
+        if (startBlock === -1 || startBlock === "") {
+            options.startBlock = 0;
+        } else {
+            options.startBlock = parseInt(startBlock);
+            console.log("START BLOCK IS SET")
+        }
+        if (endBlock !== -1 && endBlock !== "") {
+            options.disconnect = false;
+            options.endBlock = endBlock;
+            console.log("END BLOCK IS SET");
+        };
+        console.log("OPTIONS " + JSON.stringify(options));
+
+        const eventHandler = eventHub.registerChaincodeEvent(contractName, eventName, (event, blockNumber, txid, status) => {
+            node.log('got event ' + event.event_name + ' ' + event.payload);
+            const msg = {
+                eventName: event.event_name,
+                payload: event.payload,
+                blockNumber: blockNumber,
+                txid: txid,
+                status: status
+            };
+            node.status({});
+            node.send(msg);
+        }, (error) => {
+            node.log('error', error);
+            throw new Error(error.message);
+        }, options
+        /*{startBlock: 0}*/);
+
+        eventHandlers.push(eventHandler);
+        node.log('added event handler to list');
+    };
+
+    // eventHubs.forEach((eventHub) => {
+    //     eventHub.connect(true);
+    //     node.log('connected to event hub');
+    //         const eventHandler = eventHub.registerChaincodeEvent(contractName, eventName, (event, blockNumber, txid, status) => {
+    //             node.log('got event ' + event.event_name + ' ' + event.payload);
+    //             const msg = {
+    //                 eventName: event.event_name,
+    //                 payload: event.payload,
+    //                 blockNumber: blockNumber,
+    //                 txid: txid,
+    //                 status: status
+    //             };
+    //             node.status({});
+    //             node.send(msg);
+    //         }, (error) => {
+    //             node.log('error', error);
+    //             throw new Error(error.message);
+    //         }, options);
+
+    //         eventHandlers.push(eventHandler);
+    //         node.log('added event handler to list');
+    //     });
+    // }
 
     /**
      *
@@ -216,6 +288,59 @@ module.exports = function (RED) {
      * @param {object} config The configuration set on the node
      * @constructor
      */
+    // function FabricInNode(config) {
+    //     let node = this;
+    //     RED.nodes.createNode(node, config);
+
+    //     this.connection = RED.nodes.getNode(config.connection);
+
+    //     // node.log('config ' + util.inspect(node.connection, false, null));
+    //     const identityName = node.connection.identityName;
+    //     node.log('using connection: ' + identityName);
+    //     connect(identityName, config.channelName, config.contractName, node)
+    //         .then(() => {
+    //             console.log(JSON.stringify(config));
+    //             return eventTEST(config.channelName, config.contractName, config.eventName, node, config.startBlock, config.endBlock);
+    //         })
+    //         .catch((error) => {
+    //             node.status({ fill: 'red', shape: 'dot', text: 'Error' });
+    //             node.error('Error: ' + error.message);
+    //         });
+
+
+    //     node.on('close', () => {
+    //         node.status({ fill: 'red', shape: 'ring', text: 'disconnected' });
+    //         node.log('close');
+    //         if (network) {
+    //             node.log('got network so need to unregister');
+    //             const channel = network.getChannel();
+    //             const eventHubs = channel.getChannelEventHubsForOrg();
+    //             eventHubs.forEach((eventHub) => {
+    //                 eventHandlers.forEach((eventHandler) => {
+    //                     node.log('unregistering from chaincode event');
+    //                     eventHub.unregisterChaincodeEvent(eventHandler);
+    //                 });
+    //             });
+    //         }
+
+    //         if (gateway) {
+    //             node.log('got gateway so disconnect');
+    //             gateway.disconnect();
+    //         }
+
+    //         node.log('finished close');
+    //     });
+    // }
+
+    // RED.nodes.registerType('fabric-in', FabricInNode);
+
+
+
+    /**
+   * Create an in node
+   * @param {object} config The configuration set on the node
+   * @constructor
+   */
     function FabricInNode(config) {
         let node = this;
         RED.nodes.createNode(node, config);
@@ -225,42 +350,93 @@ module.exports = function (RED) {
         // node.log('config ' + util.inspect(node.connection, false, null));
         const identityName = node.connection.identityName;
         node.log('using connection: ' + identityName);
-        connect(identityName, config.channelName, config.contractName, node)
-            .then(() => {
-                return subscribeToEvents(config.channelName, config.contractName, config.eventName, node);
-            })
-            .catch((error) => {
+        const channelName = config.channelName;
+        const orgName = config.orgName;
+        const walletLocation = node.connection.walletLocation;
+        const connectionProfile = JSON.parse(node.connection.connectionProfile);
+        const peerName = config.peerName;
+        const chaincodeName = config.contractName;
+        const eventName = config.eventName;
+        const startBlock = config.startBlock;
+        const endBlock = config.endBlock;
+        connectToPeer(identityName, channelName, orgName,
+            peerName, connectionProfile, walletLocation)
+            .then((networkData) => {
+                return subscribeToEvent(networkData.peer, networkData.channel,
+                    chaincodeName, eventName, startBlock, endBlock, node)
+            }).catch((error) => {
+                console.log(error);
                 node.status({ fill: 'red', shape: 'dot', text: 'Error' });
-                node.error('Error: ' + error.message, msg);
+                node.error('Error: ' + error.message);
             });
-
-
-        node.on('close', () => {
-            node.status({ fill: 'red', shape: 'ring', text: 'disconnected' });
-            node.log('close');
-            if (network) {
-                node.log('got network so need to unregister');
-                const channel = network.getChannel();
-                const eventHubs = channel.getChannelEventHubsForOrg();
-                eventHubs.forEach((eventHub) => {
-                    eventHandlers.forEach((eventHandler) => {
-                        node.log('unregistering from chaincode event');
-                        eventHub.unregisterChaincodeEvent(eventHandler);
-                    });
-                });
-            }
-
-            if (gateway) {
-                node.log('got gateway so disconnect');
-                gateway.disconnect();
-            }
-
-            node.log('finished close');
-        });
     }
 
     RED.nodes.registerType('fabric-in', FabricInNode);
 
+
+    async function subscribeToEvent(peer, channel, chaincodeName,
+        eventName, startBlock, endBlock, node) {
+        let eventHub = channel.newChannelEventHub(peer);
+        startBlock = parseInt(startBlock);
+        endBlock = parseInt(endBlock);
+        var options = {};
+        if (isNaN(startBlock)) {
+            options.startBlock = 0;
+        } else {
+            options.startBlock = startBlock;
+        }
+        if (!isNaN(endBlock)) {
+            options.endBlock = endBlock;
+            options.disconnect = false;
+        }
+        console.log(options);
+        var event = eventHub.registerChaincodeEvent(chaincodeName, eventName, (event, blockNumber, txid, status) => {
+            var msg = {
+                payload: event.payload.toString('utf8'),
+                blockNumber: blockNumber,
+                txid: txid,
+                status: status
+            };
+            node.status({});
+            node.send(msg);
+        }, (error) => {
+            console.log(error);
+            throw new Error(error);
+        }, options);
+        eventHub.connect(true);
+    }
+
+    async function connectToPeer(identityName, channelName,
+        orgName, peerName, connectionProfile, walletLocation) {
+        try {
+            var fabric_client = new fabricClient();
+            var peer = fabric_client.newPeer(connectionProfile.peers[orgName + '-' + peerName].url, { pem: connectionProfile.peers[orgName + '-' + peerName].tlsCACerts.pem, 'ssl-target-name-override': null });
+            var channel = fabric_client.newChannel(channelName);
+            channel.addPeer(peer);
+            var stateStore = await fabricClient.newDefaultKeyValueStore({
+                path: walletLocation
+            });
+            fabric_client.setStateStore(stateStore);
+            var cryptoSuite = fabricClient.newCryptoSuite();
+            var cryptoStore = fabricClient.newCryptoKeyStore({ path: walletLocation });
+            cryptoSuite.setCryptoKeyStore(cryptoStore);
+            fabric_client.setCryptoSuite(cryptoSuite);
+            var userFromStore = await fabric_client.getUserContext(identityName, true);
+            if (!userFromStore || !userFromStore.isEnrolled()) {
+                throw new Error("User not enrolled or not from store");
+            } else {
+                return ({
+                    channel: channel,
+                    peer: peer
+                });
+            }
+        } catch (error) {
+            console.error("Error when connecting to peer");
+            console.log(error);
+        }
+
+
+    }
 
     //ENHANCE
     // query node
@@ -282,9 +458,9 @@ module.exports = function (RED) {
             this.connection = RED.nodes.getNode(config.connection);
             try {
                 const queryConfig = assembleQueryData(msg.payload, config);
-                await connect(node.connection.identityName, 
+                await connect(node.connection.identityName,
                     queryConfig.channelName,
-                    queryConfig.contractName, 
+                    queryConfig.contractName,
                     node);
                 const network = await gateway.getNetwork(queryConfig.channelName);
                 const channel = network.getChannel();
@@ -318,7 +494,7 @@ module.exports = function (RED) {
 
     function assembleQueryData(payload, config) {
         var data = {};
-        if (typeof payload.channelName === "string"){
+        if (typeof payload.channelName === "string") {
             data.channelName = payload.channelName;
         } else {
             data.channelName = config.channelName;

@@ -101,6 +101,14 @@ limitations under the License.
         <label for="node-input-endBlock"><i class="fa"></i>End Block</label>
         <input type="text" id="node-input-endBlock" placeholder=".*"/>
     </div>
+    <div class="form-row">
+        <label for="node-input-orgName"><i class="fa"></i>Org name</label>
+        <input type="text" id="node-input-orgName" placeholder=".*"/>
+    </div>
+    <div class="form-row">
+        <label for="node-input-peerName"><i class="fa"></i>Peer name</label>
+        <input type="text" id="node-input-peerName" placeholder=".*"/>
+    </div>
 </script>
 <script type="text/x-red" data-template-name="fabric-query">
     <div class="form-row">
@@ -203,8 +211,11 @@ limitations under the License.
             channelName : {value : '', required : true},
             contractName : {value : '', required : true},
             eventName : {value : '.*', required : false},
-            startBlock: {value: '', type: 'num', required: false},
-            endBlock: {value: '', type: 'num', required: false}
+            startBlock: {value: -1, type: 'num', required: false},
+            endBlock: {value: -1, type: 'num', required: false},
+            orgName: {value: '', type: 'text', required: true},
+            peerName: {value: '', type: 'text', required: true}
+            
         },
         inputs : 0,
         outputs : 1,

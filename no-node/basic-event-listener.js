@@ -31,9 +31,9 @@ const networkInfo = {
 }
 
 
-richQueryChaincode(networkInfo);
+//richQueryChaincode(networkInfo);
 
-//listenForEvent(networkInfo);
+listenForEvent(networkInfo);
 //queryChaincode(networkInfo);
 
 async function queryChaincode(networkInfo) {
@@ -62,7 +62,8 @@ async function richQueryChaincode(networkInfo) {
    * @param {string} walletLocation The path to the wallet folder
    * @returns {Promise<{channel: Client.Channel;peer: Client.Peer;}>} promise
    */
-async function connectToPeer(identityName, channelName, orgName, peerName, connectionProfile, walletLocation) {
+async function connectToPeer(identityName, channelName, 
+    orgName, peerName, connectionProfile, walletLocation) {
     try {
         var fabric_client = new Fabric_Client();
         var peer = fabric_client.newPeer(connectionProfile.peers[orgName + '-' + peerName].url, { pem: connectionProfile.peers[orgName + '-' + peerName].tlsCACerts.pem, 'ssl-target-name-override': null });
@@ -105,7 +106,8 @@ async function connectToPeer(identityName, channelName, orgName, peerName, conne
    * @param {int} endBlock The last block to listen to. Afterwards, the listenner should stop
    * @param {function} eventCallback The function to execute when receiving an event
    */
-async function subscribeToEvent(peer, channel, chaincodeName, eventName, startBlock, endBlock, eventCallback) {
+async function subscribeToEvent(peer, channel, chaincodeName, 
+    eventName, startBlock, endBlock, eventCallback) {
     let eventHub = channel.newChannelEventHub(peer);
 
     event = eventHub.registerChaincodeEvent(chaincodeName, eventName, (event, blockNumber, txid, status) => {
