@@ -263,14 +263,14 @@ limitations under the License.
           paletteLabel: "Hyperledger Fabric - Event list",
           defaults: {
               name: {value: ""},
-              connection : {value : '', type : 'fabric-config'},
-              channelName : {value : '', required : true},
-              contractName : {value : '', required : true},
+              connection : {value : '', type : 'fabric-config', required: true},
+              channelName : {value : '', required : false},
+              contractName : {value : '', required : false},
               eventName : {value : '.*', required : false},
               startBlock: {value: -1, type: 'num', required: false},
               endBlock: {value: -1, type: 'num', required: false},
-              orgName: {value: '', type: 'text', required: true},
-              peerName: {value: '', type: 'text', required: true},
+              orgName: {value: '', type: 'text', required: false},
+              peerName: {value: '', type: 'text', required: false},
               walletLocation: {value:'', type:'text', required: true},
               timeout: {value: '', type: 'text', required: false}
               
