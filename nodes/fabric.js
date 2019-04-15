@@ -18,7 +18,6 @@ module.exports = function (RED) {
     const fabricNetwork = require('fabric-network');
     const fabricClient = require('fabric-client');
 
-    var eventHubs = [];
     var eventHandlers = [];
     //const eventHandlers = [];
     let gateway = new fabricNetwork.Gateway();
@@ -113,81 +112,116 @@ module.exports = function (RED) {
         });
     }
 
-    async function eventTEST(channelName, contractName, eventName = '.*', node, startBlock = -1, endBlock = -1) {
-        node.log(`subscribe ${channelName} ${contractName} ${eventName}`);
-        const network = await gateway.getNetwork(channelName);
-        const channel = network.getChannel();
-        node.log('got channel');
 
-        var eventHub = channel.getChannelEventHub('org1-peer1');
-
-
-
-
-
-        // const eventHubs = channel.getChannelEventHubsForOrg();
-        // node.log('got event hubs');
-        // __________________
-        console.log("START BLOCK BEFORE " + startBlock);
-        console.log("ENDBLOCK BEFORE " + endBlock);
-        const options = {};
-        if (startBlock === -1 || startBlock === "") {
+    /**
+ * An event subscriber that subscribes to only one event and closes after a 2sec timeout
+ * It also can listen on an interval of blocks, useful in cases you do not want to keep listenning
+ * Sends the events in an array
+ * @param {peer} peer The peer to connect to
+ * @param {channel} channel The channel on which create the event hub
+ * @param {string} chaincodeName The name of the chaincode
+ * @param {string} eventName The name of the event to listen to
+ * @param {integer} startBlock The block to start listenning from (0 by default)
+ * @param {integer} endBlock The last block to listen to (newest by default)
+ * @param {Node} node node
+ * @param {object} msg The msg object 
+ * @returns {Promise<Buffer>} promise
+ */
+    async function subscribeToEvent(peer, channel, chaincodeName,
+        eventName, startBlock, endBlock, node, msg) {
+        let eventHub = channel.newChannelEventHub(peer);
+        console.log(startBlock);
+        startBlock = parseInt(startBlock);
+        endBlock = parseInt(endBlock);
+        console.log(startBlock);
+        var options = {};
+        // In case the user did not provide the field
+        if (isNaN(startBlock)) {
             options.startBlock = 0;
         } else {
-            options.startBlock = parseInt(startBlock);
-            console.log("START BLOCK IS SET")
+            options.startBlock = startBlock;
         }
-        if (endBlock !== -1 && endBlock !== "") {
-            options.disconnect = false;
+        if (!isNaN(endBlock)) {
             options.endBlock = endBlock;
-            console.log("END BLOCK IS SET");
-        };
-        console.log("OPTIONS " + JSON.stringify(options));
-
-        const eventHandler = eventHub.registerChaincodeEvent(contractName, eventName, (event, blockNumber, txid, status) => {
-            node.log('got event ' + event.event_name + ' ' + event.payload);
-            const msg = {
-                eventName: event.event_name,
-                payload: event.payload,
+            //https://jira.hyperledger.org/browse/FABN-1207
+            options.disconnect = false;
+        }
+        //https://jira.hyperledger.org/browse/FABN-1211
+        //options.unregister = true;
+        var event = null;
+        var eventList = [];
+        var eventTimeout = setTimeout(() => {
+            if (event) {
+                eventHub.unregisterChaincodeEvent(event);
+                node.log("Unregistered chaincode event");
+                var data = { eventList: eventList };
+                node.send(data);
+            }
+            node.log("Timed out for chaincode event (Expected)");
+        }, 2000);
+        node.log("Event listener options: " + JSON.stringify(options));
+        event = eventHub.registerChaincodeEvent(chaincodeName, eventName, (event, blockNumber, txid, status) => {
+            var msg = {
+                payload: event.payload.toString('utf8'),
                 blockNumber: blockNumber,
                 txid: txid,
                 status: status
             };
+            eventList.push(msg);
+            // refresh timeout because we want ALL the events in the block interval
+            // not only the ones in the time interval
+            eventTimeout.refresh();
             node.status({});
-            node.send(msg);
+            // node.send(msg);
         }, (error) => {
-            node.log('error', error);
-            throw new Error(error.message);
-        }, options
-        /*{startBlock: 0}*/);
+            console.log(error);
+            node.error(error, msg);
+        }, options);
+        eventHub.connect(true);
+        node.log("Registered event listener");
+    }
 
-        eventHandlers.push(eventHandler);
-        node.log('added event handler to list');
-    };
+    /**
+ *
+ * @param {string} identityName identityName
+ * @param {string} channelName channel
+ * @param {string} orgName name of the organization
+ * @param {string} peerName name of the peer
+ * @param {object} connectionProfile the connection profile as a json
+ * @param {string} walletLocation the wallet location (the files, not the folder)
+ * @returns {PromiseLike<Contract | never>} promise
+ */
+    async function connectToPeer(identityName, channelName,
+        orgName, peerName, connectionProfile, walletLocation) {
+        try {
+            var fabric_client = new fabricClient();
+            var peer = fabric_client.newPeer(connectionProfile.peers[orgName + '-' + peerName].url, { pem: connectionProfile.peers[orgName + '-' + peerName].tlsCACerts.pem, 'ssl-target-name-override': null });
+            var channel = fabric_client.newChannel(channelName);
+            channel.addPeer(peer);
+            var stateStore = await fabricClient.newDefaultKeyValueStore({
+                path: walletLocation
+            });
+            fabric_client.setStateStore(stateStore);
+            var cryptoSuite = fabricClient.newCryptoSuite();
+            var cryptoStore = fabricClient.newCryptoKeyStore({ path: walletLocation });
+            cryptoSuite.setCryptoKeyStore(cryptoStore);
+            fabric_client.setCryptoSuite(cryptoSuite);
+            var userFromStore = await fabric_client.getUserContext(identityName, true);
+            if (!userFromStore || !userFromStore.isEnrolled()) {
+                throw new Error("User not enrolled or not from store");
+            } else {
+                return ({
+                    channel: channel,
+                    peer: peer
+                });
+            }
+        } catch (error) {
+            console.error("Error when connecting to peer");
+            console.log(error);
+        }
 
-    // eventHubs.forEach((eventHub) => {
-    //     eventHub.connect(true);
-    //     node.log('connected to event hub');
-    //         const eventHandler = eventHub.registerChaincodeEvent(contractName, eventName, (event, blockNumber, txid, status) => {
-    //             node.log('got event ' + event.event_name + ' ' + event.payload);
-    //             const msg = {
-    //                 eventName: event.event_name,
-    //                 payload: event.payload,
-    //                 blockNumber: blockNumber,
-    //                 txid: txid,
-    //                 status: status
-    //             };
-    //             node.status({});
-    //             node.send(msg);
-    //         }, (error) => {
-    //             node.log('error', error);
-    //             throw new Error(error.message);
-    //         }, options);
 
-    //         eventHandlers.push(eventHandler);
-    //         node.log('added event handler to list');
-    //     });
-    // }
+    }
 
     /**
      *
@@ -284,10 +318,10 @@ module.exports = function (RED) {
     RED.nodes.registerType('fabric-mid', FabricMidNode);
 
     /**
-     * Create an in node
-     * @param {object} config The configuration set on the node
-     * @constructor
-     */
+        * Create an in node
+        * @param {object} config The configuration set on the node
+        * @constructor
+        */
     function FabricInNode(config) {
         let node = this;
         RED.nodes.createNode(node, config);
@@ -299,8 +333,7 @@ module.exports = function (RED) {
         node.log('using connection: ' + identityName);
         connect(identityName, config.channelName, config.contractName, node)
             .then(() => {
-                console.log(JSON.stringify(config));
-                return subscribeToEvents(config.channelName, config.contractName, config.eventName, node, config.startBlock, config.endBlock);
+                return subscribeToEvents(config.channelName, config.contractName, config.eventName, node);
             })
             .catch((error) => {
                 node.status({ fill: 'red', shape: 'dot', text: 'Error' });
@@ -348,18 +381,17 @@ module.exports = function (RED) {
         node.on('input', async function (msg) {
             this.connection = RED.nodes.getNode(config.connection);
             try {
-                // node.log('config ' + util.inspect(node.connection, false, null));
                 const identityName = node.connection.identityName;
                 node.log('using connection: ' + identityName);
-                const channelName = config.channelName;
-                const orgName = config.orgName;
-                const walletLocation = config.walletLocation;
+                const channelName = typeof msg.payload.channelName === "string" ? msg.payload.channelName : config.channelName;
+                const orgName = typeof msg.payload.orgName === "string" ? msg.payload.orgName : config.orgName;
+                const walletLocation = typeof msg.payload.walletLocation === "string" ? msg.payload.walletLocation : config.walletLocation;
                 const connectionProfile = JSON.parse(node.connection.connectionProfile);
-                const peerName = config.peerName;
-                const chaincodeName = config.contractName;
-                const eventName = config.eventName;
-                const startBlock = config.startBlock;
-                const endBlock = config.endBlock;
+                const peerName = typeof msg.payload.peerName === "string" ? msg.payload.peerName : config.peerName;
+                const chaincodeName = typeof msg.payload.contractName === "string" ? msg.payload.contractName : config.contractName;
+                const eventName = typeof msg.payload.eventName === "string" ? msg.payload.eventName : config.eventName;
+                const startBlock = typeof msg.payload.startBlock === "undefined" ? config.startBlock : msg.payload.startBlock;
+                const endBlock = typeof msg.payload.endBlock === "undefined" ? config.endBlock : msg.payload.endBlock;
                 connectToPeer(identityName, channelName, orgName,
                     peerName, connectionProfile, walletLocation)
                     .then((networkData) => {
@@ -375,97 +407,11 @@ module.exports = function (RED) {
                 node.error('Error: ' + error.message, msg);
             }
         });
-
-
-
-
     }
 
     RED.nodes.registerType('fabric-event-list', FabricEventList);
 
 
-    async function subscribeToEvent(peer, channel, chaincodeName,
-        eventName, startBlock, endBlock, node, msg) {
-        let eventHub = channel.newChannelEventHub(peer);
-        startBlock = parseInt(startBlock);
-        endBlock = parseInt(endBlock);
-        var options = {};
-        // In case the user did not provide the field
-        if (isNaN(startBlock)) {
-            options.startBlock = 0;
-        } else {
-            options.startBlock = startBlock;
-        }
-        if (!isNaN(endBlock)) {
-            options.endBlock = endBlock;
-            //https://jira.hyperledger.org/browse/FABN-1207
-            options.disconnect = false;
-        }
-        //options.unregister = true;
-        var event= null;
-        var eventList = [];
-        var eventTimeout = setTimeout(() => {
-            if (event) {
-                eventHub.unregisterChaincodeEvent(event);
-                node.log("Unregistered chaincode event");
-                var data = {eventList: eventList};
-                node.send(data);
-            }
-            node.log("Timed out for chaincode event (Expected)");
-        }, 2000);
-
-        event = eventHub.registerChaincodeEvent(chaincodeName, eventName, (event, blockNumber, txid, status) => {
-            var msg = {
-                payload: event.payload.toString('utf8'),
-                blockNumber: blockNumber,
-                txid: txid,
-                status: status
-            };
-            eventList.push(msg);
-            // refresh timeout because we want ALL the events in the block interval
-            // not only the ones in the time interval
-            eventTimeout.refresh();
-            node.status({});
-           // node.send(msg);
-        }, (error) => {
-            console.log(error);
-            node.error(error, msg);
-        }, options);
-        eventHub.connect(true);
-        node.log("Registered event listener");
-    }
-
-    async function connectToPeer(identityName, channelName,
-        orgName, peerName, connectionProfile, walletLocation) {
-        try {
-            var fabric_client = new fabricClient();
-            var peer = fabric_client.newPeer(connectionProfile.peers[orgName + '-' + peerName].url, { pem: connectionProfile.peers[orgName + '-' + peerName].tlsCACerts.pem, 'ssl-target-name-override': null });
-            var channel = fabric_client.newChannel(channelName);
-            channel.addPeer(peer);
-            var stateStore = await fabricClient.newDefaultKeyValueStore({
-                path: walletLocation
-            });
-            fabric_client.setStateStore(stateStore);
-            var cryptoSuite = fabricClient.newCryptoSuite();
-            var cryptoStore = fabricClient.newCryptoKeyStore({ path: walletLocation });
-            cryptoSuite.setCryptoKeyStore(cryptoStore);
-            fabric_client.setCryptoSuite(cryptoSuite);
-            var userFromStore = await fabric_client.getUserContext(identityName, true);
-            if (!userFromStore || !userFromStore.isEnrolled()) {
-                throw new Error("User not enrolled or not from store");
-            } else {
-                return ({
-                    channel: channel,
-                    peer: peer
-                });
-            }
-        } catch (error) {
-            console.error("Error when connecting to peer");
-            console.log(error);
-        }
-
-
-    }
 
     //ENHANCE
     // query node

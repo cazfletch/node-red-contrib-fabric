@@ -30,10 +30,9 @@ const networkInfo = {
     }
 }
 
-
+asQueryChannelInfo(networkInfo);
 //richQueryChaincode(networkInfo);
-
-listenForEvent(networkInfo);
+//listenForEvent(networkInfo);
 //queryChaincode(networkInfo);
 
 async function queryChaincode(networkInfo) {
@@ -48,6 +47,10 @@ async function listenForEvent(networkInfo) {
 async function richQueryChaincode(networkInfo) {
     var peerConnection = await connectToPeer(networkInfo.identityName, networkInfo.channelName, networkInfo.orgName, networkInfo.peerName, networkInfo.connectionProfile, networkInfo.walletLocation);
     await richQueryWorldState(networkInfo.richQuery, peerConnection.channel);
+}
+async function asQueryChannelInfo(networkInfo) {
+    var peerConnection = await connectToPeer(networkInfo.identityName, networkInfo.channelName, networkInfo.orgName, networkInfo.peerName, networkInfo.connectionProfile, networkInfo.walletLocation);
+    await queryChannelInfo(peerConnection.channel);
 }
 
 
@@ -162,4 +165,8 @@ async function richQueryWorldState(request, channel) {
     console.log(request);
     var queryResponse = await channel.queryByChaincode(request);
     handleRichQuery(queryResponse);
+}
+
+async function queryChannelInfo(channel) {
+    console.log(await channel.queryInfo());
 }
