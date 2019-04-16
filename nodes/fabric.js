@@ -181,7 +181,7 @@ module.exports = function (RED) {
                 if (event) {
                     eventHub.unregisterChaincodeEvent(event);
                     node.log("Unregistered chaincode event");
-                    var data = { eventList: eventList };
+                    var data = { payload: eventList };
                     node.send(data);
                 }
                 node.log("Timed out for chaincode event (Expected)");
@@ -190,7 +190,7 @@ module.exports = function (RED) {
 
         node.log("Event listener options: " + JSON.stringify(options));
         event = eventHub.registerChaincodeEvent(chaincodeName, eventName, (event, blockNumber, txid, status) => {
-            var msg = {
+            var eventPayload = {
                 payload: event.payload.toString('utf8'),
                 blockNumber: blockNumber,
                 txid: txid,
@@ -203,13 +203,13 @@ module.exports = function (RED) {
                 if (eventFilter && !filterIsOver) {
                     let payload = JSON.parse(event.payload.toString('utf8'));
                     if (payload[eventFilter.key] == eventFilter.value) {
-                        eventList.push(msg);
+                        eventList.push(eventPayload);
                         filterCount++;
                         if (filterCount === eventFilter.limit) {
                             filterIsOver = true;
                             node.log("Reached filter limit");
-                            let data = { eventList: eventList };
-                            node.send(data);
+                            msg.payload = eventList;
+                            node.send(msg);
                             clearTimeout(eventTimeout);
                             eventHub.unregisterChaincodeEvent(event);
                             node.log("Unregistered event listener");
@@ -218,10 +218,11 @@ module.exports = function (RED) {
                         }
                     }
                 } else {
-                    eventList.push(msg);
+                    eventList.push(eventPayload);
                     if (eventTimeout !== undefined) eventTimeout.refresh();
                 }
             } else {
+                msg.payload = eventPayload;
                 node.send(msg);
             }
             node.status({});
