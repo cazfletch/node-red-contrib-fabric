@@ -46,6 +46,10 @@ limitations under the License.
 </style>
 <script type="text/x-red" data-template-name="fabric-config">
     <div class="form-row upload">
+            <label for="node-config-input-configLabel"><i class="fa"></i>Identity Name</label>
+            <div>
+                <input type="text" id="node-config-input-configLabel">
+            </div>
         <div>Enter connection details</div>
         <div id="node-config-input-connectionProfile-outer">
             <div class="form-row" style="margin-bottom: 0px;">
@@ -69,15 +73,14 @@ limitations under the License.
     </div>
 
 </script>
-
 <script type="text/x-red" data-help-name="fabric-config">
   <p>Hyperledger Fabric config node. Provides the configuration for the Hyperledger Fabric nodes</p>
 </script>
-
 <script type="text/javascript">
     RED.nodes.registerType('fabric-config', {
         category : 'config',
         defaults : {
+            configLabel: {value: '', required: true},
             connectionProfile : {value : '', required : true},
             identityName : {value : '', required : true},
             walletLocation : {value : '', required : true},
@@ -85,7 +88,7 @@ limitations under the License.
 
         },
         label : function () {
-            return this.identityName;
+            return this.configLabel;
         },
         oneditprepare : function () {
             var that = this;
