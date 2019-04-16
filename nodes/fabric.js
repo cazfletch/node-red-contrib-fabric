@@ -125,10 +125,19 @@ module.exports = function (RED) {
  * @param {integer} endBlock The last block to listen to (newest by default)
  * @param {Node} node node
  * @param {object} msg The msg object 
+ * @param {boolean} timeout A parameter that specifies if the listener must timeout or not
+ * @param {object} eventFilter An object that contains event filter options. Null by default. Timeout will be set to true automatically
+ * This property must contain the following properties:
+ * key: The key to check in the vent payload 
+ * value: The value of the key
+ * limit: The number of occurences
  * @returns {Promise<Buffer>} promise
  */
     async function subscribeToEvent(peer, channel, chaincodeName,
-        eventName, startBlock, endBlock, node, msg, timeout = true) {
+        eventName, startBlock, endBlock, node, msg, timeout = true, eventFilter = null) {
+        var applyFilter = false;
+        var filterIsOver = false;
+        var filterCount = 0;
         let eventHub = channel.newChannelEventHub(peer);
         startBlock = parseInt(startBlock);
         endBlock = parseInt(endBlock);
@@ -148,7 +157,25 @@ module.exports = function (RED) {
         //options.unregister = true;
         var event = null;
         var eventList = [];
-        timeout = timeout === "true" ? true: false;
+
+        timeout = timeout === "true" ? true : false;
+        if (eventFilter !== null) {
+            if (eventFilter.key === null) {
+                node.error("Key of event filter is not set", msg);
+                node.status({ fill: 'red', shape: 'dot', text: 'Error' });
+            }
+            if (eventFilter.value === null) {
+                node.error("Value of event filter is not set", msg);
+                node.status({ fill: 'red', shape: 'dot', text: 'Error' });
+            }
+            if (eventFilter.limit === null) {
+                node.warn("Event filter limit not set, default is 1");
+                eventFilter.limit = 1;
+            }
+            applyFilter = true;
+            timeout = true;
+            node.log("Event filter options " + JSON.stringify(eventFilter));
+        }
         if (timeout) {
             var eventTimeout = setTimeout(() => {
                 if (event) {
@@ -160,6 +187,7 @@ module.exports = function (RED) {
                 node.log("Timed out for chaincode event (Expected)");
             }, 2000);
         }
+
         node.log("Event listener options: " + JSON.stringify(options));
         event = eventHub.registerChaincodeEvent(chaincodeName, eventName, (event, blockNumber, txid, status) => {
             var msg = {
@@ -171,8 +199,31 @@ module.exports = function (RED) {
 
             // refresh timeout because we want ALL the events in the block interval
             // not only the ones in the time interval
-            if (timeout) { eventList.push(msg); eventTimeout.refresh(); }
-            else { node.send(msg); }
+            if (timeout) {
+                if (eventFilter && !filterIsOver) {
+                    let payload = JSON.parse(event.payload.toString('utf8'));
+                    if (payload[eventFilter.key] == eventFilter.value) {
+                        eventList.push(msg);
+                        filterCount++;
+                        if (filterCount === eventFilter.limit) {
+                            filterIsOver = true;
+                            node.log("Reached filter limit");
+                            let data = { eventList: eventList };
+                            node.send(data);
+                            clearTimeout(eventTimeout);
+                            eventHub.unregisterChaincodeEvent(event);
+                            node.log("Unregistered event listener");
+                        } else {
+                            if (eventTimeout !== undefined) eventTimeout.refresh();
+                        }
+                    }
+                } else {
+                    eventList.push(msg);
+                    if (eventTimeout !== undefined) eventTimeout.refresh();
+                }
+            } else {
+                node.send(msg);
+            }
             node.status({});
             // node.send(msg);
         }, (error) => {
@@ -394,11 +445,12 @@ module.exports = function (RED) {
                 const startBlock = typeof msg.payload.startBlock === "undefined" ? config.startBlock : msg.payload.startBlock;
                 const endBlock = typeof msg.payload.endBlock === "undefined" ? config.endBlock : msg.payload.endBlock;
                 const timeout = typeof msg.payload.timeout === "undefined" ? config.timeout : msg.payload.timeout;
+                const eventFilter = typeof msg.payload.eventFilter === "undefined" ? config.eventFilter : msg.payload.eventFilter;
                 connectToPeer(identityName, channelName, orgName,
                     peerName, connectionProfile, walletLocation)
                     .then((networkData) => {
                         return subscribeToEvent(networkData.peer, networkData.channel,
-                            chaincodeName, eventName, startBlock, endBlock, node, msg, timeout)
+                            chaincodeName, eventName, startBlock, endBlock, node, msg, timeout, eventFilter)
                     }).catch((error) => {
                         console.log(error);
                         node.status({ fill: 'red', shape: 'dot', text: 'Error' });
