@@ -130,10 +130,8 @@ module.exports = function (RED) {
     async function subscribeToEvent(peer, channel, chaincodeName,
         eventName, startBlock, endBlock, node, msg, timeout = true) {
         let eventHub = channel.newChannelEventHub(peer);
-        console.log(startBlock);
         startBlock = parseInt(startBlock);
         endBlock = parseInt(endBlock);
-        console.log(startBlock);
         var options = {};
         // In case the user did not provide the field
         if (isNaN(startBlock)) {
@@ -150,10 +148,8 @@ module.exports = function (RED) {
         //options.unregister = true;
         var event = null;
         var eventList = [];
-        console.log(timeout)
         timeout = timeout === "true" ? true: false;
         if (timeout) {
-            console.log("We set the timeout here");
             var eventTimeout = setTimeout(() => {
                 if (event) {
                     eventHub.unregisterChaincodeEvent(event);
@@ -388,7 +384,6 @@ module.exports = function (RED) {
             this.connection = RED.nodes.getNode(config.connection);
             try {
                 const identityName = node.connection.identityName;
-                node.log('using connection: ' + identityName);
                 const channelName = typeof msg.payload.channelName === "string" ? msg.payload.channelName : config.channelName;
                 const orgName = typeof msg.payload.orgName === "string" ? msg.payload.orgName : config.orgName;
                 const walletLocation = typeof msg.payload.walletLocation === "string" ? msg.payload.walletLocation : config.walletLocation;
