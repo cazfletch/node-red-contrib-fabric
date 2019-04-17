@@ -181,11 +181,11 @@ module.exports = function (RED) {
                 if (event) {
                     eventHub.unregisterChaincodeEvent(event);
                     node.log("Unregistered chaincode event");
-                    var data = { payload: eventList };
-                    node.send(data);
+                    msg.payload = eventList;
+                    node.send(msg);
                 }
                 node.log("Timed out for chaincode event (Expected)");
-            }, 2000);
+            }, 3000);
         }
 
         node.log("Event listener options: " + JSON.stringify(options));
@@ -203,6 +203,7 @@ module.exports = function (RED) {
                 if (eventFilter && !filterIsOver) {
                     let payload = JSON.parse(event.payload.toString('utf8'));
                     if (payload[eventFilter.key] == eventFilter.value) {
+                        node.log("Found event");
                         eventList.push(eventPayload);
                         filterCount++;
                         if (filterCount === eventFilter.limit) {
@@ -213,6 +214,7 @@ module.exports = function (RED) {
                             clearTimeout(eventTimeout);
                             eventHub.unregisterChaincodeEvent(event);
                             node.log("Unregistered event listener");
+                            return;
                         } else {
                             if (eventTimeout !== undefined) eventTimeout.refresh();
                         }
