@@ -125,19 +125,11 @@ module.exports = function (RED) {
  * @param {integer} endBlock The last block to listen to (newest by default)
  * @param {Node} node node
  * @param {object} msg The msg object 
- * @param {boolean} timeout A parameter that specifies if the listener must timeout or not
- * @param {object} eventFilter An object that contains event filter options. Null by default. Timeout will be set to true automatically
- * This property must contain the following properties:
- * key: The key to check in the vent payload 
- * value: The value of the key
- * limit: The number of occurences
+ * @param {boolean} timeout A parameter that specifies if the listener must timeout or not. This must be used if the purpose of the listener is to check for specific events on a specific range of blocks. Else, it will run forever
  * @returns {Promise<Buffer>} promise
  */
     async function subscribeToEvent(peer, channel, chaincodeName,
-        eventName, startBlock, endBlock, node, msg, timeout = true, eventFilter = null) {
-        var applyFilter = false;
-        var filterIsOver = false;
-        var filterCount = 0;
+        eventName, startBlock, endBlock, node, msg, timeout = true) {
         let eventHub = channel.newChannelEventHub(peer);
         startBlock = parseInt(startBlock);
         endBlock = parseInt(endBlock);
@@ -154,28 +146,12 @@ module.exports = function (RED) {
             options.disconnect = false;
         }
         //https://jira.hyperledger.org/browse/FABN-1211
+        //This will force the listener to stop on very first event found. Not what we want
         //options.unregister = true;
         var event = null;
         var eventList = [];
 
         timeout = timeout === "true" ? true : false;
-        if (eventFilter !== null) {
-            if (eventFilter.key === null) {
-                node.error("Key of event filter is not set", msg);
-                node.status({ fill: 'red', shape: 'dot', text: 'Error' });
-            }
-            if (eventFilter.value === null) {
-                node.error("Value of event filter is not set", msg);
-                node.status({ fill: 'red', shape: 'dot', text: 'Error' });
-            }
-            if (eventFilter.limit === null) {
-                node.warn("Event filter limit not set, default is 1");
-                eventFilter.limit = 1;
-            }
-            applyFilter = true;
-            timeout = true;
-            node.log("Event filter options " + JSON.stringify(eventFilter));
-        }
         if (timeout) {
             var eventTimeout = setTimeout(() => {
                 if (event) {
@@ -196,37 +172,10 @@ module.exports = function (RED) {
                 txid: txid,
                 status: status
             };
-
             // refresh timeout because we want ALL the events in the block interval
             // not only the ones in the time interval
-            if (timeout) {
-                if (eventFilter && !filterIsOver) {
-                    let payload = JSON.parse(event.payload.toString('utf8'));
-                    if (payload[eventFilter.key] == eventFilter.value) {
-                        node.log("Found event");
-                        eventList.push(eventPayload);
-                        filterCount++;
-                        if (filterCount === eventFilter.limit) {
-                            filterIsOver = true;
-                            node.log("Reached filter limit");
-                            msg.payload = eventList;
-                            node.send(msg);
-                            clearTimeout(eventTimeout);
-                            eventHub.unregisterChaincodeEvent(event);
-                            node.log("Unregistered event listener");
-                            return;
-                        } else {
-                            if (eventTimeout !== undefined) eventTimeout.refresh();
-                        }
-                    }
-                } else {
-                    eventList.push(eventPayload);
-                    if (eventTimeout !== undefined) eventTimeout.refresh();
-                }
-            } else {
-                msg.payload = eventPayload;
-                node.send(msg);
-            }
+            if (timeout) { eventList.push(eventPayload); eventTimeout.refresh(); }
+            else { node.send(eventPayload); }
             node.status({});
             // node.send(msg);
         }, (error) => {
