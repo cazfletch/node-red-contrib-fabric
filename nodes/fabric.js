@@ -397,12 +397,11 @@ module.exports = function (RED) {
                 const startBlock = typeof msg.payload.startBlock === "undefined" ? config.startBlock : msg.payload.startBlock;
                 const endBlock = typeof msg.payload.endBlock === "undefined" ? config.endBlock : msg.payload.endBlock;
                 const timeout = typeof msg.payload.timeout === "undefined" ? config.timeout : msg.payload.timeout;
-                const eventFilter = typeof msg.payload.eventFilter === "undefined" ? config.eventFilter : msg.payload.eventFilter;
                 connectToPeer(identityName, channelName, orgName,
                     peerName, connectionProfile, walletLocation)
                     .then((networkData) => {
                         return subscribeToEvent(networkData.peer, networkData.channel,
-                            chaincodeName, eventName, startBlock, endBlock, node, msg, timeout, eventFilter)
+                            chaincodeName, eventName, startBlock, endBlock, node, msg, timeout)
                     }).catch((error) => {
                         console.log(error);
                         node.status({ fill: 'red', shape: 'dot', text: 'Error' });
