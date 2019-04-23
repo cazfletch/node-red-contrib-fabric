@@ -293,10 +293,12 @@ module.exports = function (RED) {
             try {
                 //node.log('config ' + util.inspect(node.connection, false, null));
                 const identityName = node.connection.identityName;
+                var channelName = typeof msg.payload.channelName === "string" ? msg.payload.channelName : config.channelName;
+                var contractName = typeof msg.payload.contractName === "string" ? msg.payload.contractName : config.contractName;
                 node.log('using connection: ' + identityName);
                 node.log('checking payload ' + util.inspect(msg.payload, false, null));
                 checkPayload(msg.payload);
-                const connectData = await connect(identityName, config.channelName, config.contractName, node);
+                const connectData = await connect(identityName, channelName, contractName, node);
                 let result;
                 if (config.actionType === 'submit') {
                     result = await submit(connectData.contract, msg.payload, node);
