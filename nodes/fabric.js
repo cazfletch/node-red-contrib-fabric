@@ -80,7 +80,6 @@ module.exports = function (RED) {
         return contract.submitTransaction(payload.transactionName, ...payload.args);
     }
 
-    // ENHANCE : Updated param list
     async function subscribeToEvents(channelName, contractName, eventName = '.*', node) {
         node.log(`subscribe ${channelName} ${contractName} ${eventName}`);
         const network = await gateway.getNetwork(channelName);
@@ -114,9 +113,9 @@ module.exports = function (RED) {
 
 
     /**
- * An event subscriber that subscribes to only one event and closes after a 2sec timeout
+ * An event subscriber that subscribes to only one event and closes after a 2sec timeout if required
  * It also can listen on an interval of blocks, useful in cases you do not want to keep listenning
- * Sends the events in an array
+ * Sends all the events in an array or one by one in the msg.payload depending on the configuration
  * @param {peer} peer The peer to connect to
  * @param {channel} channel The channel on which create the event hub
  * @param {string} chaincodeName The name of the chaincode
@@ -143,11 +142,9 @@ module.exports = function (RED) {
         if (!isNaN(endBlock)) {
             options.endBlock = endBlock;
             //https://jira.hyperledger.org/browse/FABN-1207
+            //Required due to bug
             options.disconnect = false;
         }
-        //https://jira.hyperledger.org/browse/FABN-1211
-        //This will force the listener to stop on very first event found. Not what we want
-        //options.unregister = true;
         var event = null;
         var eventList = [];
 
@@ -377,7 +374,7 @@ module.exports = function (RED) {
 
 
     /**
-   * Create an in node
+   * Create an event listener node
    * @param {object} config The configuration set on the node
    * @constructor
    */
@@ -418,10 +415,6 @@ module.exports = function (RED) {
 
     RED.nodes.registerType('fabric-event-list', FabricEventList);
 
-
-
-    //ENHANCE
-    // query node
 
     /**
      * Create a query node
