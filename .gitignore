@@ -62,3 +62,7 @@ out
 /.idea/
 
 package-lock.json
+
+# no nodes test and config
+/no-node/config
+
