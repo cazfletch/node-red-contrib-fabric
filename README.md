@@ -5,7 +5,6 @@
     - [Hyperledger-Fabric-In](#hyperledger-fabric-in)
     - [Hyperledger-Fabric-Event-List](#hyperledger-fabric-event-list)
     - [Hyperledger-Fabric-Query](#hyperledger-fabric-query)
-- [The purpose of these modifications](#the-purpose-of-these-modifications)
   - [License <a name="license"></a>](#license-a-name%22license%22a)
 # node-red-contrib-fabric
 A set of nodes for interacting with Hyperledger Fabric
@@ -23,40 +22,27 @@ A node red input node that subscribes to events from a blockchain.
 ### Hyperledger-Fabric-Event-List
 This node is an evolution of the Hyperledger-Fabric-In node.
 
-A node red mid flow that allows you to subscribe to events from a blockchain.
+A node red mid flow that allows you to subscribe to events from a blockchain on a block interval
 
 This node can be configured manually or dynamically with the input payload. The input payload overwrites the manual configuration. 
 
-Only the provided properties are overwritten, meaning you can use manual node configuration AND dynamic configuration at the same time.
+You can use manual node configuration AND dynamic configuration at the same time. The manual configuration properties will be overwriten by those provided in the ``msg.payload`` input message.
 
 This node allows to listen on a specific range of blocks.
 
-This node allows to setup a two seconds timeout to unregister the event listener.
+This node allows to setup a two seconds timeout to unregister the event listener. 
 
-The node behave differently depending on how you use it:
+Note: Currently it seems mandatory due to a [bug](https://jira.hyperledger.org/browse/FABN-1207) with the chaincode event listener options.
+
+The node behaves differently depending on how you use it:
 - If the node is configured to listen indefinitely (no timeout, no end block), events are pushed one by one to the next node.
-- If the node is configured to listen on a specific range of block (with an end block, with a timeout), it will return all events in an array to the next node, once the timeout is reached
-- If the node is configured to listen on a specific range of block (with an end block, no timeout), events are pushed one by one to the next node
+- If the node is configured to listen on a specific range of block (with an end block, with a timeout), once the timeout is reached, it will return all events in an array to the next node.
+- If the node is configured to listen on a specific range of block (with an end block, no timeout), events are pushed one by one to the next node. (Warning: If you specify a block higher than the current higher block, events located in new blocks won't be found)
 
 ### Hyperledger-Fabric-Query
 A node red mid flow that allows you to query the blockchain world state.
 
 This node cand be configured dynamicaly with an input payload.
-
-# The purpose of these modifications
-
-We modified the [node-red-contrib-fabric node](https://github.com/floriancastelain/node-red-contrib-fabric) in order to make it fulfill our requirements for an internal project.
-
-The requirements are:
-
-- A node that sends transactions and wait for them to be commited (or not)
-  - This is already acheived with the mid node
-- A node that queries the world state
-  - We need to create this node
-- A node that listens for specific events on a range of blocks
-  - We need to create this node
-  - Remark: As [this issue](https://jira.hyperledger.org/browse/FABN-1207)  says, the listener options may be bugued. We may need to use a timeout as this is the case in custom node release [v0.0.2](https://github.com/floriancastelain/node-red-contrib-fabric/releases/tag/v0.0.2)
-
 
 
 ## License <a name="license"></a>

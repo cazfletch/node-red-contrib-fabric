@@ -161,7 +161,7 @@ module.exports = function (RED) {
                     node.send(msg);
                 }
                 node.log("Timed out for chaincode event (Expected)");
-            }, 3000);
+            }, 2000);
         }
 
         node.log("Event listener options: " + JSON.stringify(options));
