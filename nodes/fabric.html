@@ -63,11 +63,13 @@ limitations under the License.
 
     <div class="form-row">
         <label for="node-input-actionType"><i class="fa"></i>Action Type</label>
-        <select id="node-input-actionType">
+        <select id="node-input-actionTypeForm">
             <option value="submit">Submit Transaction</option>
             <option value="evaluate">Evaluate Transaction</option>
+            <option value="query"> Query Worldstate </option>
         </select>
     </div>
+
 </script>
 <script type="text/x-red" data-template-name="fabric-in">
     <div class="form-row">
@@ -194,13 +196,33 @@ limitations under the License.
     });
 </script>
 <script type="text/x-red" data-help-name="fabric-mid">
-<p>Hyperledger Fabric mid node. Submit or evaluate transactions</p>
-  <p>The name of the transaction should be set like <code>msg.payload.transactionName</code></p>
-  <p>The arguments for the transaction should be set like <code>msg.payload.args</code>. The arguments should be an array of strings</p>
-  <p>For example <code>{"transactionName: "myTransaction", "args": ["arg1", "arg2"]}</code></p>
+<p>Hyperledger Fabric mid node. Submit or evaluate transactions and query world state</p>
+
+
+  <ul>
+    <li>Submit/evaluate
+      <ul>
+        <li>the arguments for the transaction should be set like <code>msg.payload.transactionArgs</code>.</li>
+        <li>The arguments should be an array of strings</li>
+        <li>The name of the transaction should be set like <code>msg.payload.transactionName</code></li>
+        <li>The type of transaction (<code>submit</code> or <code>evaluate</code>) should be set like <code>msg.payload.actionType</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
+        <li>Example: <code>{"transactionArgs": ["Arg1","Arg2","Arg3",],"transactionName": "myTransactionName","actionType": "submit"}</code> </li>
+    </ul>
+    </li>
+    <li>Query
+        <ul>
+          <li>the arguments for the transaction should be set like <code>msg.payload.queryArgs</code>.</li>
+          <li>The arguments should be an array of strings</li>
+          <li>The type of transaction (<code>query</code>) should be set like <code>msg.payload.actionType</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
+          <li>The name of the function to use in the chaincode should be set like <code>msg.payload.queryFcn</code> </li>
+          <li>Example: <code>{"queryArgs": ["myAssetKey"],"queryFcn": "query","actionType": "query"}</code> </li>
+        </ul>
+      </li>
+  </ul>
   <p>Data returned from a transaction will be in <code>msg.payload</></p>
   <p>The <code>payload</code> will be a buffer and you will need to deserialize the data downstream</p>
   <p>For example <code>msg.payload.toString()</code>
+
 </script>
 <script type="text/javascript">
     RED.nodes.registerType('fabric-mid', {
@@ -212,14 +234,14 @@ limitations under the License.
             connection : {value : '', type : 'fabric-config'},
             channelName : {value : '', required : false},
             contractName : {value : '', required : false},
-            actionType : {value : 'submit'}
+            actionTypeForm : {value : 'submit'}
         },
         inputs : 1,
         outputs : 1,
         icon : 'icon.png',
         label : function () {
             return this.name || 'Hyperledger Fabric - Mid';
-        }
+        },
     });
 </script>
 <script type="text/x-red" data-help-name="fabric-in">

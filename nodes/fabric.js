@@ -64,8 +64,8 @@ module.exports = function (RED) {
      * @returns {Promise<Buffer>} promise
      */
     function submit(contract, payload, node) {
-        node.log(`submit ${payload.transactionName} ${payload.args}`);
-        return contract.submitTransaction(payload.transactionName, ...payload.args);
+        node.log(`submit ${payload.transactionName} ${payload.transactionArgs}`);
+        return contract.submitTransaction(payload.transactionName, ...payload.transactionArgs);
     }
 
     /**
@@ -76,8 +76,24 @@ module.exports = function (RED) {
      * @returns {Promise<Buffer>} promise
      */
     function evaluate(contract, payload, node) {
-        node.log(`evaluate ${payload.transactionName} ${payload.args}`);
-        return contract.submitTransaction(payload.transactionName, ...payload.args);
+        node.log(`evaluate ${payload.transactionName} ${payload.transactionArgs}`);
+        return contract.submitTransaction(payload.transactionName, ...payload.transactionArgs);
+    }
+
+    /**
+    * 
+    * @param {Contract} contract contract
+    * @param {object} payload payload
+    * @param {Node} node node
+    * @returns {Promise<Buffer>} promise
+    */
+    function query(channel, payload, contractName, node) {
+        node.log(`query ${contractName} ${payload.queryFcn} ${payload.queryArgs}`);
+        return channel.queryByChaincode({
+            chaincodeId: contractName,
+            fcn: payload.queryFcn,
+            args: payload.queryArgs
+        });
     }
 
     async function subscribeToEvents(channelName, contractName, eventName = '.*', node) {
@@ -221,23 +237,21 @@ module.exports = function (RED) {
             console.error("Error when connecting to peer");
             console.log(error);
         }
-
-
     }
 
-    /**
-     *
-     * @param payload
-     */
-    function checkPayload(payload) {
-        if (!payload.transactionName || typeof payload.transactionName !== 'string') {
-            throw new Error('message should contain a transaction name of type string');
-        }
+    // /**
+    //  *
+    //  * @param payload
+    //  */
+    // function checkPayload(payload) {
+    //     if (!payload.transactionName || typeof payload.transactionName !== 'string') {
+    //         throw new Error('message should contain a transaction name of type string');
+    //     }
 
-        if (payload.args && !Array.isArray(payload.args)) {
-            throw new Error('message args should be an array of strings');
-        }
-    }
+    //     if (payload.args && !Array.isArray(payload.args)) {
+    //         throw new Error('message args should be an array of strings');
+    //     }
+    // }
 
     /**
      * Create a output node
@@ -292,18 +306,18 @@ module.exports = function (RED) {
                 const identityName = node.connection.identityName;
                 var channelName = typeof msg.payload.channelName === "string" ? msg.payload.channelName : config.channelName;
                 var contractName = typeof msg.payload.contractName === "string" ? msg.payload.contractName : config.contractName;
+                var actionType = typeof msg.payload.actionType === "string" ? msg.payload.actionType : config.actionType;
                 node.log('using connection: ' + identityName);
-                node.log('checking payload ' + util.inspect(msg.payload, false, null));
-                checkPayload(msg.payload);
                 const connectData = await connect(identityName, channelName, contractName, node);
                 let result;
-                if (config.actionType === 'submit') {
+                node.log("actionType " + actionType);
+                if (actionType === "submit") {
                     result = await submit(connectData.contract, msg.payload, node);
-                } else {
+                } else if (actionType === "evaluate") {
                     result = await evaluate(connectData.contract, msg.payload, node);
+                } else {
+                    result = await query(connectData.network.getChannel(), msg.payload, contractName, node);
                 }
-
-                node.log('got a result ' + result);
                 msg.payload = result;
                 node.status({});
                 node.send(msg);
@@ -415,76 +429,5 @@ module.exports = function (RED) {
 
     RED.nodes.registerType('fabric-event-list', FabricEventList);
 
-
-    /**
-     * Create a query node
-     * Returns the query result as is
-     * In case of rich queries, do not forget to stringify the arg (selector)
-     * Simple query example: {"chaincodeId":"chaincodeName","fcn":"query","args":["myarg"]}
-     * Rich query example: {"chaincodeId":"chaincodeName","fcn":"richQuery","args":["{ \"selector\": { \"field\": \"fieldValue\" } }"]}
-     * @param {object} config The configuration set on the node
-     * @constructor
-     */
-    function FabricQueryNode(config) {
-        let node = this;
-        RED.nodes.createNode(node, config);
-
-        node.on('input', async function (msg) {
-            this.connection = RED.nodes.getNode(config.connection);
-            try {
-                const queryConfig = assembleQueryData(msg.payload, config);
-                await connect(node.connection.identityName,
-                    queryConfig.channelName,
-                    queryConfig.contractName,
-                    node);
-                const network = await gateway.getNetwork(queryConfig.channelName);
-                const channel = network.getChannel();
-                const inputRequestAsJson = queryConfig.request;
-                var request = {
-                    chaincodeId: inputRequestAsJson.chaincodeId,
-                    fcn: inputRequestAsJson.fcn,
-                    args: []
-                };
-                for (let i = 0; i < inputRequestAsJson.args.length; i++) {
-                    request.args.push(inputRequestAsJson.args[i]);
-                }
-                msg.payload = await channel.queryByChaincode(request);
-                node.status({});
-                node.send(msg);
-
-            } catch (error) {
-                node.status({ fill: 'red', shape: 'dot', text: 'Error' });
-                node.error('Error: ' + error.message, msg);
-            } finally {
-                gateway.disconnect();
-                node.log("disconnected gateway");
-            }
-        });
-
-        node.on('close', () => {
-            node.status({});
-        });
-    }
-    RED.nodes.registerType('fabric-query', FabricQueryNode);
-
-    function assembleQueryData(payload, config) {
-        var data = {};
-        if (typeof payload.channelName === "string") {
-            data.channelName = payload.channelName;
-        } else {
-            data.channelName = config.channelName;
-        }
-        if (typeof payload.contractName === "string") {
-            data.contractName = payload.contractName;
-        } else {
-            data.channelName = config.channelName;
-        }
-        if (typeof payload.request === "object") {
-            data.request = payload.request;
-        } else {
-            data.request = config.request;
-        }
-        return data;
-    }
 };
 
