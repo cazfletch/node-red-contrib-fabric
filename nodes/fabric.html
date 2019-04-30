@@ -66,7 +66,8 @@ limitations under the License.
         <select id="node-input-actionTypeForm">
             <option value="submit">Submit Transaction</option>
             <option value="evaluate">Evaluate Transaction</option>
-            <option value="query"> Query Worldstate </option>
+            <option value="query">Query Worldstate</option>
+            <option value="event">Listen Event</option>
         </select>
     </div>
 
@@ -91,81 +92,6 @@ limitations under the License.
     <div class="form-row">
         <label for="node-input-eventName"><i class="fa"></i>Event Name</label>
         <input type="text" id="node-input-eventName" placeholder=".*"/>
-    </div>
-</script>
-<script type="text/x-red" data-template-name="fabric-event-list">
-    <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
-        <input type="text" id="node-input-name" data-i18n="[placeholder]node-red:common.label.name">
-    </div>
-    <div class="form-row">
-        <label for="node-input-connection"><i class="fa"></i>Connection</label>
-        <input type="select" id="node-input-connection" placeholder="Connection"/>
-    </div>
-
-     <div class="form-row">
-        <label for="node-input-channelName"><i class="fa"></i>Channel Name</label>
-        <input type="text" id="node-input-channelName" placeholder=""/>
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-contractName"><i class="fa"></i>Contract Name</label>
-        <input type="text" id="node-input-contractName" placeholder=""/>
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-eventName"><i class="fa"></i>Event Name</label>
-        <input type="text" id="node-input-eventName" placeholder=".*"/>
-    </div>
-    <div class="form-row">
-        <label for="node-input-startBlock"><i class="fa"></i>Start Block</label>
-        <input type="text" id="node-input-startBlock" placeholder=".*"/>
-    </div>
-    <div class="form-row">
-        <label for="node-input-endBlock"><i class="fa"></i>End Block</label>
-        <input type="text" id="node-input-endBlock" placeholder=".*"/>
-    </div>
-    <div class="form-row">
-        <label for="node-input-orgName"><i class="fa"></i>Org name</label>
-        <input type="text" id="node-input-orgName" placeholder=".*"/>
-    </div>
-    <div class="form-row">
-        <label for="node-input-peerName"><i class="fa"></i>Peer name</label>
-        <input type="text" id="node-input-peerName" placeholder=".*"/>
-    </div>
-    <div class="form-row">
-        <label for="node-input-walletLocation"><i class="fa"></i>Wallet location</label>
-        <input type="text" id="node-input-walletLocation" placeholder=".*"/>
-    </div>
-    <div class="form-row">
-        <label for="node-input-timeout"><i class="fa"></i>timeout</label>
-        <input type="text" id="node-input-timeout" placeholder=".*"/>
-    </div>
-</script>
-<script type="text/x-red" data-template-name="fabric-query">
-    <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
-        <input type="text" id="node-input-name" data-i18n="[placeholder]node-red:common.label.name">
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-connection"><i class="fa"></i>Connection</label>
-        <input type="select" id="node-input-connection" placeholder="Connection"/>
-    </div>
-
-     <div class="form-row">
-        <label for="node-input-channelName"><i class="fa"></i>Channel Name</label>
-        <input type="text" id="node-input-channelName" placeholder=""/>
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-request"><i class="fa"></i>Request</label>
-        <input type="text" id="node-input-request" placeholder=""/>
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-contractName"><i class="fa"></i>Chaincode name</label>
-        <input type="text" id="node-input-contractName" placeholder=""/>
     </div>
 </script>
 <script type="text/x-red" data-help-name="fabric-out">
@@ -205,20 +131,33 @@ limitations under the License.
         <li>the arguments for the transaction should be set like <code>msg.payload.transactionArgs</code>.</li>
         <li>The arguments should be an array of strings</li>
         <li>The name of the transaction should be set like <code>msg.payload.transactionName</code></li>
-        <li>The type of transaction (<code>submit</code> or <code>evaluate</code>) should be set like <code>msg.payload.actionType</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
-        <li>Example: <code>{"transactionArgs": ["Arg1","Arg2","Arg3",],"transactionName": "myTransactionName","actionType": "submit"}</code> </li>
+        <li>The type of transaction (<code>submit</code> or <code>evaluate</code>) should be set like <code>msg.payload.actionTypeForm</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
+        <li>Example: <code>{"transactionArgs": ["Arg1","Arg2","Arg3",],"transactionName": "myTransactionName","actionTypeForm": "submit"}</code> </li>
     </ul>
     </li>
     <li>Query
         <ul>
           <li>the arguments for the transaction should be set like <code>msg.payload.queryArgs</code>.</li>
           <li>The arguments should be an array of strings</li>
-          <li>The type of transaction (<code>query</code>) should be set like <code>msg.payload.actionType</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
+          <li>The type of transaction (<code>query</code>) should be set like <code>msg.payload.actionTypeForm</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
           <li>The name of the function to use in the chaincode should be set like <code>msg.payload.queryFcn</code> </li>
-          <li>Example: <code>{"queryArgs": ["myAssetKey"],"queryFcn": "query","actionType": "query"}</code> </li>
+          <li>Example: <code>{"queryArgs": ["myAssetKey"],"queryFcn": "query","actionTypeForm": "query"}</code> </li>
         </ul>
       </li>
-  </ul>
+      <li>Event
+            <ul>
+              <li>The timeout allows you to change the way the results are sent back to you. It is <code>"true"</code> by default. When <code>"true"</code>, it returns the events all at once in an array. When it is <code>"false"</code>, it returns the events one by one in <code>msg.payload</code></li>
+              <li><code>"startBlock"</code> and <code>"endBlock"</code> can be specified. When not, starts from 0 and never stops.</li>
+              <li><code>"eventName"</code> is the name of the event to match. Keep in mind that it accepts regular expressions.</li>
+              <li><code>"contractName"</code> is the name of the contract (chaincode) to listen events on.</li>
+              <li><code>"walletLocation"</code> is the path to the wallet on your file system. Be aware,even on Windows, it should be set with slashes and not backslashes.</li>
+              <li><code>"orgName"</code> is the name of the organization of the peer you connect to</li>
+              <li><code>"peerName"</code> is the name of the peer you connect to</li>
+              <li>The type of transaction (<code>event</code>) should be set like <code>msg.payload.actionTypeForm</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
+              <li>Example: <code>{"startBlock":"0","endBlock":"100","timeout":"true","eventName":"myEventName","contractName":"myContractName","actionTypeForm":"event","walletLocation":"path/to/wallet/admin","orgName":"org1","peerName":"peer1"}</code> </li>
+            </ul>
+        </li> 
+</ul>
   <p>Data returned from a transaction will be in <code>msg.payload</></p>
   <p>The <code>payload</code> will be a buffer and you will need to deserialize the data downstream</p>
   <p>For example <code>msg.payload.toString()</code>
@@ -270,69 +209,4 @@ limitations under the License.
               return this.name || "Hyperledger Fabric";
           }
       });
-</script>
-<script type="text/x-red" data-help-name="fabric-event-list">
-    <p>Hyperledger Fabric input node. Subscribe to events emitted by a blockchain</p>.
-    <p>Will create a message with the structure <code>{"eventName" : "myEvent", "payload": "myPayload"}</code></p>
-    <p>The <code>payload</code> will be a buffer and you will need to deserialize the data downstream</p>
-    <p>For example <code>msg.payload.toString()</code>
-    <p>The start block and end block are not required.</p>
-  </script>
-<script type="text/javascript">
-      RED.nodes.registerType('fabric-event-list', {
-          category: 'Hyperledger',
-          color: "#E6E0F8",
-          paletteLabel: "Hyperledger Fabric - Event list",
-          defaults: {
-              name: {value: ""},
-              connection : {value : '', type : 'fabric-config', required: true},
-              channelName : {value : '', required : false},
-              contractName : {value : '', required : false},
-              eventName : {value : '.*', required : false},
-              startBlock: {value: '', type: 'num', required: false},
-              endBlock: {value: '', type: 'num', required: false},
-              orgName: {value: '', type: 'text', required: false},
-              peerName: {value: '', type: 'text', required: false},
-              walletLocation: {value:'', type:'text', required: true},
-              timeout: {value: '', type: 'text', required: false}
-              
-          },
-          inputs : 1,
-          outputs : 1,
-          icon : "icon.png",
-          align : "left",
-          label : function () {
-              return this.name || "Hyperledger Fabric - Event list";
-          }
-      });
-  </script>
-<script type="text/x-red" data-help-name="fabric-query">
-    <p>Hyperledger Fabric query node. Query the ledger world state</p>
-    <p>This node returns a result, even if it is a chaincode error.</p>
-    <p>Any input payload will overwrite the manual configuration</p>
-    <p>The <code>request</code> parameter should be the following:</p>
-    <p>Simple query: <code>{"chaincodeId":"chaincodeName","fcn":"query","args":["myarg"]}</code></p>
-    <p>Rich query: <code> {"chaincodeId":"chaincodeName","fcn":"richQuery","args":["{ \"selector\": { \"field\": \"fieldValue\" } }"]}</code></p>
-    <p>Notice that for the rich query, the arg has been escaped. You must do it before sending it to this node</p>
-    <p>Remark: change the <code>fcn</code> property to suite the name of the query function you have in your chaincode</p>
-</script>
-<script type="text/javascript">
-        RED.nodes.registerType('fabric-query', {
-            category : 'Hyperledger',
-            color : '#E6E0F8',
-            paletteLabel : 'Hyperledger Fabric - Query',
-            defaults : {
-                name : {value : ''},
-                connection : {value : '', type : 'fabric-config'},
-                channelName : {value : '', required : false},
-                request: {value: '', required: false},
-                contractName: {value:'', required: false}
-                },
-            inputs : 1,
-            outputs : 1,
-            icon : 'icon.png',
-            label : function () {
-                return this.name || 'Hyperledger Fabric - Query';
-            }
-        });
 </script>

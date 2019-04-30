@@ -19,7 +19,6 @@ module.exports = function (RED) {
     const fabricClient = require('fabric-client');
 
     var eventHandlers = [];
-    //const eventHandlers = [];
     let gateway = new fabricNetwork.Gateway();
     let network;
 
@@ -46,7 +45,6 @@ module.exports = function (RED) {
                 asLocalhost: true
             }
         };
-
         await gateway.connect(parsedProfile, options);
         node.log('connected to gateway');
         const network = await gateway.getNetwork(channelName);
@@ -163,8 +161,9 @@ module.exports = function (RED) {
         }
         var event = null;
         var eventList = [];
-
+        console.log(typeof timeout);
         timeout = timeout === "true" ? true : false;
+        console.log(timeout);
         if (timeout) {
             var eventTimeout = setTimeout(() => {
                 if (event) {
@@ -239,19 +238,6 @@ module.exports = function (RED) {
         }
     }
 
-    // /**
-    //  *
-    //  * @param payload
-    //  */
-    // function checkPayload(payload) {
-    //     if (!payload.transactionName || typeof payload.transactionName !== 'string') {
-    //         throw new Error('message should contain a transaction name of type string');
-    //     }
-
-    //     if (payload.args && !Array.isArray(payload.args)) {
-    //         throw new Error('message args should be an array of strings');
-    //     }
-    // }
 
     /**
      * Create a output node
@@ -306,28 +292,38 @@ module.exports = function (RED) {
                 const identityName = node.connection.identityName;
                 var channelName = typeof msg.payload.channelName === "string" ? msg.payload.channelName : config.channelName;
                 var contractName = typeof msg.payload.contractName === "string" ? msg.payload.contractName : config.contractName;
-                var actionType = typeof msg.payload.actionType === "string" ? msg.payload.actionType : config.actionType;
+                var actionType = typeof msg.payload.actionTypeForm === "string" ? msg.payload.actionTypeForm : config.actionTypeForm;
+                const connectionProfile = JSON.parse(node.connection.connectionProfile);
                 node.log('using connection: ' + identityName);
-                const connectData = await connect(identityName, channelName, contractName, node);
                 let result;
-                node.log("actionType " + actionType);
                 if (actionType === "submit") {
-                    result = await submit(connectData.contract, msg.payload, node);
+                    const networkInfo = await connect(identityName, channelName, contractName, node);
+                    result = await submit(networkInfo.contract, msg.payload, node);
+                    msg.payload = result;
+                    node.status({});
+                    node.send(msg);
                 } else if (actionType === "evaluate") {
-                    result = await evaluate(connectData.contract, msg.payload, node);
-                } else {
-                    result = await query(connectData.network.getChannel(), msg.payload, contractName, node);
+                    const networkInfo = await connect(identityName, channelName, contractName, node);
+                    result = await evaluate(networkInfo.contract, msg.payload, node);
+                    msg.payload = result;
+                    node.status({});
+                    node.send(msg);
+                } else if (actionType === "query") {
+                    const networkInfo = await connect(identityName, channelName, contractName, node);
+                    result = await query(networkInfo.network.getChannel(), msg.payload, contractName, node);
+                    msg.payload = result;
+                    node.status({});
+                    node.send(msg);
+                } else if (actionType === "event") {
+                    const networkInfo = await connectToPeer(identityName, channelName, msg.payload.orgName, msg.payload.peerName, connectionProfile, msg.payload.walletLocation);
+                    result = await subscribeToEvent(networkInfo.peer, networkInfo.channel, contractName, msg.payload.eventName, 
+                    msg.payload.startBlock, msg.payload.endBlock, node, msg, msg.payload.timeout);
                 }
-                msg.payload = result;
-                node.status({});
-                node.send(msg);
-
             } catch (error) {
                 node.status({ fill: 'red', shape: 'dot', text: 'Error' });
                 node.error('Error: ' + error.message, msg);
             }
         });
-
         node.on('close', () => {
             node.status({});
         });
@@ -343,10 +339,7 @@ module.exports = function (RED) {
     function FabricInNode(config) {
         let node = this;
         RED.nodes.createNode(node, config);
-
         this.connection = RED.nodes.getNode(config.connection);
-
-        // node.log('config ' + util.inspect(node.connection, false, null));
         const identityName = node.connection.identityName;
         node.log('using connection: ' + identityName);
         connect(identityName, config.channelName, config.contractName, node)
@@ -357,8 +350,6 @@ module.exports = function (RED) {
                 node.status({ fill: 'red', shape: 'dot', text: 'Error' });
                 node.error('Error: ' + error.message);
             });
-
-
         node.on('close', () => {
             node.status({ fill: 'red', shape: 'ring', text: 'disconnected' });
             node.log('close');
@@ -373,61 +364,13 @@ module.exports = function (RED) {
                     });
                 });
             }
-
             if (gateway) {
                 node.log('got gateway so disconnect');
                 gateway.disconnect();
             }
-
             node.log('finished close');
         });
     }
-
     RED.nodes.registerType('fabric-in', FabricInNode);
-
-
-
-    /**
-   * Create an event listener node
-   * @param {object} config The configuration set on the node
-   * @constructor
-   */
-    function FabricEventList(config) {
-        let node = this;
-        RED.nodes.createNode(node, config);
-
-        node.on('input', async function (msg) {
-            this.connection = RED.nodes.getNode(config.connection);
-            try {
-                const identityName = node.connection.identityName;
-                const channelName = typeof msg.payload.channelName === "string" ? msg.payload.channelName : config.channelName;
-                const orgName = typeof msg.payload.orgName === "string" ? msg.payload.orgName : config.orgName;
-                const walletLocation = typeof msg.payload.walletLocation === "string" ? msg.payload.walletLocation : config.walletLocation;
-                const connectionProfile = JSON.parse(node.connection.connectionProfile);
-                const peerName = typeof msg.payload.peerName === "string" ? msg.payload.peerName : config.peerName;
-                const chaincodeName = typeof msg.payload.contractName === "string" ? msg.payload.contractName : config.contractName;
-                const eventName = typeof msg.payload.eventName === "string" ? msg.payload.eventName : config.eventName;
-                const startBlock = typeof msg.payload.startBlock === "undefined" ? config.startBlock : msg.payload.startBlock;
-                const endBlock = typeof msg.payload.endBlock === "undefined" ? config.endBlock : msg.payload.endBlock;
-                const timeout = typeof msg.payload.timeout === "undefined" ? config.timeout : msg.payload.timeout;
-                connectToPeer(identityName, channelName, orgName,
-                    peerName, connectionProfile, walletLocation)
-                    .then((networkData) => {
-                        return subscribeToEvent(networkData.peer, networkData.channel,
-                            chaincodeName, eventName, startBlock, endBlock, node, msg, timeout)
-                    }).catch((error) => {
-                        console.log(error);
-                        node.status({ fill: 'red', shape: 'dot', text: 'Error' });
-                        node.error('Error: ' + error.message);
-                    });
-            } catch (error) {
-                node.status({ fill: 'red', shape: 'dot', text: 'Error' });
-                node.error('Error: ' + error.message, msg);
-            }
-        });
-    }
-
-    RED.nodes.registerType('fabric-event-list', FabricEventList);
-
 };
 
