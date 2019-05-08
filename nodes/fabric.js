@@ -198,6 +198,16 @@ module.exports = function (RED) {
         node.log("Registered event listener");
     }
 
+
+    //todo signature
+    async function queryBlock(channel, payload) {
+        return await channel.queryBlock(payload.blockNumber);
+    }
+
+    async function queryTransaction(channel, transactionId) {
+        return await channel.queryTransaction(transactionId);
+    }
+
     /**
  *
  * @param {string} identityName identityName
@@ -318,6 +328,16 @@ module.exports = function (RED) {
                     const networkInfo = await connectToPeer(identityName, channelName, msg.payload.orgName, msg.payload.peerName, connectionProfile, msg.payload.walletLocation);
                     result = await subscribeToEvent(networkInfo.peer, networkInfo.channel, contractName, msg.payload.eventName, 
                     msg.payload.startBlock, msg.payload.endBlock, node, msg, msg.payload.timeout);
+                } else if (actionType === "block") {
+                    const networkInfo = await connectToPeer(identityName, channelName, msg.payload.orgName, msg.payload.peerName, connectionProfile, msg.payload.walletLocation);
+                    result = await queryBlock(networkInfo.channel, msg.payload);
+                    msg.payload = result;
+                    node.send(msg);
+                } else if (actionType === "transaction") {
+                    const networkInfo = await connectToPeer(identityName, channelName, msg.payload.orgName, msg.payload.peerName, connectionProfile, msg.payload.walletLocation);
+                    result = await queryTransaction(networkInfo.channel, msg.payload.transactionId);
+                    msg.payload = result;
+                    node.send(msg);
                 }
             } catch (error) {
                 node.status({ fill: 'red', shape: 'dot', text: 'Error' });

@@ -68,6 +68,8 @@ limitations under the License.
             <option value="evaluate">Evaluate Transaction</option>
             <option value="query">Query Worldstate</option>
             <option value="event">Listen Event</option>
+            <option value="block">Query Block</option>
+            <option value="transaction">Query Transaction</option>
         </select>
     </div>
 
@@ -121,8 +123,10 @@ limitations under the License.
         }
     });
 </script>
+
+<!-- TODO update with queryTransaction and queryBlock -->
 <script type="text/x-red" data-help-name="fabric-mid">
-<p>Hyperledger Fabric mid node. Submit or evaluate transactions and query world state</p>
+<p>Hyperledger Fabric mid node. Submit or evaluate transactions, query world state and listen for events</p>
 
 
   <ul>
