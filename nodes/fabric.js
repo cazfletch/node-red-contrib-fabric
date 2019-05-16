@@ -13,7 +13,7 @@
  */
 
 'use strict';
-module.exports = function (RED) {
+module.exports = function(RED) {
     const util = require('util');
     const fabricNetwork = require('fabric-network');
     const fabricClient = require('fabric-client');
@@ -79,12 +79,12 @@ module.exports = function (RED) {
     }
 
     /**
-    * 
-    * @param {Contract} contract contract
-    * @param {object} payload payload
-    * @param {Node} node node
-    * @returns {Promise<Buffer>} promise
-    */
+     * 
+     * @param {Contract} contract contract
+     * @param {object} payload payload
+     * @param {Node} node node
+     * @returns {Promise<Buffer>} promise
+     */
     function query(channel, payload, contractName, node) {
         node.log(`query ${contractName} ${payload.queryFcn} ${payload.queryArgs}`);
         return channel.queryByChaincode({
@@ -127,20 +127,20 @@ module.exports = function (RED) {
 
 
     /**
- * An event subscriber that subscribes to only one event and closes after a 2sec timeout if required
- * It also can listen on an interval of blocks, useful in cases you do not want to keep listenning
- * Sends all the events in an array or one by one in the msg.payload depending on the configuration
- * @param {peer} peer The peer to connect to
- * @param {channel} channel The channel on which create the event hub
- * @param {string} chaincodeName The name of the chaincode
- * @param {string} eventName The name of the event to listen to
- * @param {integer} startBlock The block to start listenning from (0 by default)
- * @param {integer} endBlock The last block to listen to (newest by default)
- * @param {Node} node node
- * @param {object} msg The msg object 
- * @param {boolean} timeout A parameter that specifies if the listener must timeout or not. This must be used if the purpose of the listener is to check for specific events on a specific range of blocks. Else, it will run forever
- * @returns {Promise<Buffer>} promise
- */
+     * An event subscriber that subscribes to only one event and closes after a 2sec timeout if required
+     * It also can listen on an interval of blocks, useful in cases you do not want to keep listenning
+     * Sends all the events in an array or one by one in the msg.payload depending on the configuration
+     * @param {peer} peer The peer to connect to
+     * @param {channel} channel The channel on which create the event hub
+     * @param {string} chaincodeName The name of the chaincode
+     * @param {string} eventName The name of the event to listen to
+     * @param {integer} startBlock The block to start listenning from (0 by default)
+     * @param {integer} endBlock The last block to listen to (newest by default)
+     * @param {Node} node node
+     * @param {object} msg The msg object 
+     * @param {boolean} timeout A parameter that specifies if the listener must timeout or not. This must be used if the purpose of the listener is to check for specific events on a specific range of blocks. Else, it will run forever
+     * @returns {Promise<Buffer>} promise
+     */
     async function subscribeToEvent(peer, channel, chaincodeName,
         eventName, startBlock, endBlock, node, msg, timeout = true) {
         let eventHub = channel.newChannelEventHub(peer);
@@ -186,8 +186,10 @@ module.exports = function (RED) {
             };
             // refresh timeout because we want ALL the events in the block interval
             // not only the ones in the time interval
-            if (timeout) { eventList.push(eventPayload); eventTimeout.refresh(); }
-            else { node.send(eventPayload); }
+            if (timeout) {
+                eventList.push(eventPayload);
+                eventTimeout.refresh();
+            } else { node.send(eventPayload); }
             node.status({});
             // node.send(msg);
         }, (error) => {
@@ -199,25 +201,36 @@ module.exports = function (RED) {
     }
 
 
-    //todo signature
-    async function queryBlock(channel, payload) {
-        return await channel.queryBlock(payload.blockNumber);
+    /**
+     *
+     * @param {object} channel the channel object
+     * @param {string} blockNumber the number of the block to get
+     * @returns {PromiseLike<Contract | never>} promise
+     */
+    async function queryBlock(channel, blockNumber) {
+        return await channel.queryBlock(blockNumber);
     }
 
+    /**
+     *
+     * @param {object} channel the channel object
+     * @param {string} transactionId the identifier of the transaction to get
+     * @returns {PromiseLike<Contract | never>} promise
+     */
     async function queryTransaction(channel, transactionId) {
         return await channel.queryTransaction(transactionId);
     }
 
     /**
- *
- * @param {string} identityName identityName
- * @param {string} channelName channel
- * @param {string} orgName name of the organization
- * @param {string} peerName name of the peer
- * @param {object} connectionProfile the connection profile as a json
- * @param {string} walletLocation the wallet location (the files, not the folder)
- * @returns {PromiseLike<Contract | never>} promise
- */
+     *
+     * @param {string} identityName identityName
+     * @param {string} channelName channel
+     * @param {string} orgName name of the organization
+     * @param {string} peerName name of the peer
+     * @param {object} connectionProfile the connection profile as a json
+     * @param {string} walletLocation the wallet location (the files, not the folder)
+     * @returns {PromiseLike<Contract | never>} promise
+     */
     async function connectToPeer(identityName, channelName,
         orgName, peerName, connectionProfile, walletLocation) {
         try {
@@ -258,7 +271,7 @@ module.exports = function (RED) {
         let node = this;
         RED.nodes.createNode(node, config);
 
-        node.on('input', async function (msg) {
+        node.on('input', async function(msg) {
             this.connection = RED.nodes.getNode(config.connection);
             try {
                 const identityName = node.connection.identityName;
@@ -295,7 +308,7 @@ module.exports = function (RED) {
         let node = this;
         RED.nodes.createNode(node, config);
 
-        node.on('input', async function (msg) {
+        node.on('input', async function(msg) {
             this.connection = RED.nodes.getNode(config.connection);
             try {
                 //node.log('config ' + util.inspect(node.connection, false, null));
@@ -326,8 +339,8 @@ module.exports = function (RED) {
                     node.send(msg);
                 } else if (actionType === "event") {
                     const networkInfo = await connectToPeer(identityName, channelName, msg.payload.orgName, msg.payload.peerName, connectionProfile, msg.payload.walletLocation);
-                    result = await subscribeToEvent(networkInfo.peer, networkInfo.channel, contractName, msg.payload.eventName, 
-                    msg.payload.startBlock, msg.payload.endBlock, node, msg, msg.payload.timeout);
+                    result = await subscribeToEvent(networkInfo.peer, networkInfo.channel, contractName, msg.payload.eventName,
+                        msg.payload.startBlock, msg.payload.endBlock, node, msg, msg.payload.timeout);
                 } else if (actionType === "block") {
                     const networkInfo = await connectToPeer(identityName, channelName, msg.payload.orgName, msg.payload.peerName, connectionProfile, msg.payload.walletLocation);
                     result = await queryBlock(networkInfo.channel, msg.payload);
@@ -352,10 +365,10 @@ module.exports = function (RED) {
     RED.nodes.registerType('fabric-mid', FabricMidNode);
 
     /**
-        * Create an in node
-        * @param {object} config The configuration set on the node
-        * @constructor
-        */
+     * Create an in node
+     * @param {object} config The configuration set on the node
+     * @constructor
+     */
     function FabricInNode(config) {
         let node = this;
         RED.nodes.createNode(node, config);
@@ -393,4 +406,3 @@ module.exports = function (RED) {
     }
     RED.nodes.registerType('fabric-in', FabricInNode);
 };
-
