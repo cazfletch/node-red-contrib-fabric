@@ -161,9 +161,7 @@ module.exports = function(RED) {
         }
         var event = null;
         var eventList = [];
-        console.log(typeof timeout);
         timeout = timeout === "true" ? true : false;
-        console.log(timeout);
         if (timeout) {
             var eventTimeout = setTimeout(() => {
                 if (event) {
@@ -232,18 +230,19 @@ module.exports = function(RED) {
      * @returns {PromiseLike<Contract | never>} promise
      */
     async function connectToPeer(identityName, channelName,
-        orgName, peerName, connectionProfile, walletLocation) {
+        orgName, peerName, connection) {
         try {
+            var connectionProfile = JSON.parse(connection.connectionProfile);
             var fabric_client = new fabricClient();
             var peer = fabric_client.newPeer(connectionProfile.peers[orgName + '-' + peerName].url, { pem: connectionProfile.peers[orgName + '-' + peerName].tlsCACerts.pem, 'ssl-target-name-override': null });
             var channel = fabric_client.newChannel(channelName);
             channel.addPeer(peer);
             var stateStore = await fabricClient.newDefaultKeyValueStore({
-                path: walletLocation
+                path: connection.walletLocation + `\\${identityName}`
             });
             fabric_client.setStateStore(stateStore);
             var cryptoSuite = fabricClient.newCryptoSuite();
-            var cryptoStore = fabricClient.newCryptoKeyStore({ path: walletLocation });
+            var cryptoStore = fabricClient.newCryptoKeyStore({ path: connection.walletLocation + `\\${identityName}` });
             cryptoSuite.setCryptoKeyStore(cryptoStore);
             fabric_client.setCryptoSuite(cryptoSuite);
             var userFromStore = await fabric_client.getUserContext(identityName, true);
@@ -315,10 +314,11 @@ module.exports = function(RED) {
                 const identityName = node.connection.identityName;
                 var channelName = typeof msg.payload.channelName === "string" ? msg.payload.channelName : config.channelName;
                 var contractName = typeof msg.payload.contractName === "string" ? msg.payload.contractName : config.contractName;
-                var actionType = typeof msg.payload.actionTypeForm === "string" ? msg.payload.actionTypeForm : config.actionTypeForm;
-                const connectionProfile = JSON.parse(node.connection.connectionProfile);
+                var actionType = typeof msg.payload.actionType === "string" ? msg.payload.actionType : config.actionType;
+                // const connectionProfile = JSON.parse(node.connection.connectionProfile);
                 node.log('using connection: ' + identityName);
                 let result;
+                node.log("Node performing action: " + actionType);
                 if (actionType === "submit") {
                     const networkInfo = await connect(identityName, channelName, contractName, node);
                     result = await submit(networkInfo.contract, msg.payload, node);
@@ -338,16 +338,16 @@ module.exports = function(RED) {
                     node.status({});
                     node.send(msg);
                 } else if (actionType === "event") {
-                    const networkInfo = await connectToPeer(identityName, channelName, msg.payload.orgName, msg.payload.peerName, connectionProfile, msg.payload.walletLocation);
+                    const networkInfo = await connectToPeer(identityName, channelName, msg.payload.orgName, msg.payload.peerName, node.connection);
                     result = await subscribeToEvent(networkInfo.peer, networkInfo.channel, contractName, msg.payload.eventName,
                         msg.payload.startBlock, msg.payload.endBlock, node, msg, msg.payload.timeout);
                 } else if (actionType === "block") {
-                    const networkInfo = await connectToPeer(identityName, channelName, msg.payload.orgName, msg.payload.peerName, connectionProfile, msg.payload.walletLocation);
-                    result = await queryBlock(networkInfo.channel, msg.payload);
+                    const networkInfo = await connectToPeer(identityName, channelName, msg.payload.orgName, msg.payload.peerName, node.connection);
+                    result = await queryBlock(networkInfo.channel, msg.payload.blockNumber);
                     msg.payload = result;
                     node.send(msg);
                 } else if (actionType === "transaction") {
-                    const networkInfo = await connectToPeer(identityName, channelName, msg.payload.orgName, msg.payload.peerName, connectionProfile, msg.payload.walletLocation);
+                    const networkInfo = await connectToPeer(identityName, channelName, msg.payload.orgName, msg.payload.peerName, node.connection);
                     result = await queryTransaction(networkInfo.channel, msg.payload.transactionId);
                     msg.payload = result;
                     node.send(msg);
