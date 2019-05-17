@@ -115,7 +115,7 @@ module.exports = function(RED) {
             const eventHandler = eventHub.registerChaincodeEvent(contractName, eventName, (event, blockNumber, txid, status) => {
                 node.log('got event ' + eventName + ' ' + event.payload);
                 const msg = {
-                    eventName: event.eventName,
+                    eventName: eventName,
                     payload: event.payload,
                     blockNumber: blockNumber,
                     txid: txid,
