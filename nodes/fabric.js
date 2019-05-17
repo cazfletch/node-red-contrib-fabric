@@ -141,11 +141,11 @@ module.exports = function(RED) {
      * @param {boolean} timeout A parameter that specifies if the listener must timeout or not. This must be used if the purpose of the listener is to check for specific events on a specific range of blocks. Else, it will run forever
      * @returns {Promise<Buffer>} promise
      */
-    async function subscribeToEvent(peer, channel, chaincodeName,
-        eventName, startBlock, endBlock, node, msg, timeout = true) {
+    async function subscribeToEvent(peer, channel, chaincodeName, node, msg) {
         let eventHub = channel.newChannelEventHub(peer);
-        startBlock = parseInt(startBlock);
-        endBlock = parseInt(endBlock);
+        var startBlock = parseInt(msg.payload.startBlock);
+        var endBlock = parseInt(msg.payload.endBlock);
+        var timeout = msg.payload.timeout === undefined ? true : msg.payload.timeout;
         var options = {};
         // In case the user did not provide the field
         if (isNaN(startBlock)) {
@@ -175,7 +175,7 @@ module.exports = function(RED) {
         }
 
         node.log("Event listener options: " + JSON.stringify(options));
-        event = eventHub.registerChaincodeEvent(chaincodeName, eventName, (event, blockNumber, txid, status) => {
+        event = eventHub.registerChaincodeEvent(chaincodeName, msg.payload.eventName, (event, blockNumber, txid, status) => {
             var eventPayload = {
                 payload: event.payload.toString('utf8'),
                 blockNumber: blockNumber,
@@ -187,9 +187,11 @@ module.exports = function(RED) {
             if (timeout) {
                 eventList.push(eventPayload);
                 eventTimeout.refresh();
-            } else { node.send(eventPayload); }
+            } else {
+                msg.payload = eventPayload;
+                node.send(msg);
+            }
             node.status({});
-            // node.send(msg);
         }, (error) => {
             console.log(error);
             node.error(error, msg);
@@ -339,8 +341,7 @@ module.exports = function(RED) {
                     node.send(msg);
                 } else if (actionType === "event") {
                     const networkInfo = await connectToPeer(identityName, channelName, msg.payload.orgName, msg.payload.peerName, node.connection);
-                    result = await subscribeToEvent(networkInfo.peer, networkInfo.channel, contractName, msg.payload.eventName,
-                        msg.payload.startBlock, msg.payload.endBlock, node, msg, msg.payload.timeout);
+                    result = await subscribeToEvent(networkInfo.peer, networkInfo.channel, contractName, node, msg);
                 } else if (actionType === "block") {
                     const networkInfo = await connectToPeer(identityName, channelName, msg.payload.orgName, msg.payload.peerName, node.connection);
                     result = await queryBlock(networkInfo.channel, msg.payload.blockNumber);
