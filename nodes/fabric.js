@@ -76,23 +76,7 @@ module.exports = function(RED) {
      */
     function evaluate(contract, payload, node) {
         node.log(`evaluate ${payload.transactionName} ${payload.transactionArgs}`);
-        return contract.submitTransaction(payload.transactionName, ...payload.transactionArgs);
-    }
-
-    /**
-     * @param {object} channel the channel object
-     * @param {object} payload payload
-     * @param {string} contractName the name of the contrat
-     * @param {Node} node node
-     * @returns {Promise<Buffer>} promise
-     */
-    function query(channel, payload, contractName, node) {
-        node.log(`query ${contractName} ${payload.queryFcn} ${payload.queryArgs}`);
-        return channel.queryByChaincode({
-            chaincodeId: contractName,
-            fcn: payload.queryFcn,
-            args: payload.queryArgs
-        });
+        return contract.evaluateTransaction(payload.transactionName, ...payload.transactionArgs);
     }
 
     /**
@@ -158,6 +142,7 @@ module.exports = function(RED) {
      * @param {Node} node node
      * @param {object} msg the msg object
      * @returns {Promise<Buffer>} promise
+     * TODO merge with other subscribeToEvents
      */
     async function subscribeToEvent(peer, channel, chaincodeName, node, msg) {
         let eventHub = channel.newChannelEventHub(peer);
@@ -248,6 +233,7 @@ module.exports = function(RED) {
      * @param {object} connection the connection config
      * @param {string} walletLocation the wallet location (the files, not the folder)
      * @returns {PromiseLike<Contract | never>} promise
+     * TODO Check if really needed
      */
     async function connectToPeer(identityName, channelName,
         orgName, peerName, connection) {
@@ -348,12 +334,6 @@ module.exports = function(RED) {
                 } else if (actionType === 'evaluate') {
                     const networkInfo = await connect(identityName, channelName, contractName, node);
                     result = await evaluate(networkInfo.contract, msg.payload, node);
-                    msg.payload = result;
-                    node.status({});
-                    node.send(msg);
-                } else if (actionType === 'query') {
-                    const networkInfo = await connect(identityName, channelName, contractName, node);
-                    result = await query(networkInfo.network.getChannel(), msg.payload, contractName, node);
                     msg.payload = result;
                     node.status({});
                     node.send(msg);

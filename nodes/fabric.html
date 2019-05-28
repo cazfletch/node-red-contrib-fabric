@@ -66,7 +66,6 @@ limitations under the License.
         <select id="node-input-actionType">
             <option value="submit">Submit Transaction</option>
             <option value="evaluate">Evaluate Transaction</option>
-            <option value="query">Query Worldstate</option>
             <option value="event">Listen Event</option>
             <option value="block">Query Block</option>
             <option value="transaction">Query Transaction</option>
@@ -137,9 +136,8 @@ limitations under the License.
     });
 </script>
 
-<!-- TODO update with queryTransaction and queryBlock -->
 <script type="text/x-red" data-help-name="fabric-mid">
-    <p>Hyperledger Fabric mid node. Submit or evaluate transactions, query world state, listen for events, query a block or query a transaction</p>
+    <p>Hyperledger Fabric mid node. Submit or evaluate transactions, listen for events, query a block or query a transaction</p>
 
 
     <ul>
@@ -151,15 +149,6 @@ limitations under the License.
                 <li>The type of action the node should perform (<code>submit</code> or <code>evaluate</code>) should be set like <code>msg.payload.actionType</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
                 <li>Example: <code>{"transactionArgs": ["ARG0","ARG1","etc."],"transactionName": "myTxName","actionType": "submit","contractName": "myContractName"
                 }</code> </li>
-            </ul>
-        </li>
-        <li>Query
-            <ul>
-                <li>the arguments for the transaction should be set like <code>msg.payload.queryArgs</code>.</li>
-                <li>The arguments should be an array of strings</li>
-                <li>The type of action the node should perform (<code>query</code>) should be set like <code>msg.payload.actionType</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
-                <li>The name of the function to use in the chaincode should be set like <code>msg.payload.queryFcn</code> </li>
-                <li>Example: <code>{"queryArgs":["myArg", "etc."],"queryFcn":"myQueryFunction","actionType":"query","contractName":"contractName"}</code> </li>
             </ul>
         </li>
         <li>Event
@@ -186,7 +175,7 @@ limitations under the License.
         <li>transaction
             <ul>
                 <li>The type of action the node should perform (<code>transaction</code>) should be set like <code>msg.payload.actionType</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
-                <li>The name of the function to use in the chaincode should be set like <code>msg.payload.queryFcn</code> </li>
+                <li>The id of the transaction to query should be set like <code>msg.payload.transactionId</code> </li>
                 <li>Example: <code>{"actionType": "transaction","orgName": "myOrgName","peerName": "myPeerName","transactionId": "myTxId"}</code> </li>
             </ul>
         </li>
