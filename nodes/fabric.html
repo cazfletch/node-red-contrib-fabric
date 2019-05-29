@@ -94,6 +94,19 @@ limitations under the License.
         <label for="node-input-eventName"><i class="fa"></i>Event Name</label>
         <input type="text" id="node-input-eventName" placeholder=".*" />
     </div>
+    <div class="form-row">
+        <label for="node-input-startBlock"><i class="fa"></i>Start Block</label>
+        <input type="text" id="node-input-startBlock" placeholder="" />
+    </div>
+    <div class="form-row">
+        <label for="node-input-endBlock"><i class="fa"></i>End Block</label>
+        <input type="text" id="node-input-endBlock" placeholder="" />
+    </div>
+    <div class="form-row">
+        <label for="node-input-timeout"><i class="fa"></i>Timeout</label>
+        <input type="text" id="node-input-timeout" placeholder="" />
+    </div>
+
 </script>
 <script type="text/x-red" data-help-name="fabric-out">
     <p>Hyperledger Fabric output node. Submit or evaluate transactions</p>
@@ -246,6 +259,18 @@ limitations under the License.
             },
             eventName: {
                 value: '.*',
+                required: false
+            },
+            startBlock: {
+                value: '',
+                required: false
+            },
+            endBlock: {
+                value: '',
+                required: false
+            },
+            timeout: {
+                value: 'true',
                 required: false
             },
         },
