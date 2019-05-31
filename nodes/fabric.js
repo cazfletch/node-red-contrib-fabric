@@ -18,9 +18,7 @@ module.exports = function(RED) {
     const fabricNetwork = require('fabric-network');
     const fabricClient = require('fabric-client');
 
-    let eventHandlers = [];
     let gateway = new fabricNetwork.Gateway();
-    let network;
 
     // The list of the event hubs, "indexed" by the node id
     // Think of it like a C# dictionnary
@@ -113,8 +111,8 @@ module.exports = function(RED) {
      * @returns {object} event the event
      */
     function chaincodeEventFactory(hub, chaincodeName, eventName, node, msg, isTimeout, timeout, options, eventList) {
-        var event = hub.registerChaincodeEvent(chaincodeName, eventName, (event, blockNumber, txid, status) => {
-            var eventPayload = {
+        let event = hub.registerChaincodeEvent(chaincodeName, eventName, (event, blockNumber, txid, status) => {
+            let eventPayload = {
                 payload: event.payload.toString('utf8'),
                 blockNumber: blockNumber,
                 txid: txid,
@@ -129,8 +127,8 @@ module.exports = function(RED) {
             }
             node.status({});
         }, (error) => {
-            if (timeout.done && error.message === "ChannelEventHub has been shutdown") {
-                node.log("Expected chaincode listener shutdown");
+            if (timeout.done && error.message === 'ChannelEventHub has been shutdown') {
+                node.log('Expected chaincode listener shutdown');
             } else {
                 console.log(error);
                 node.error(error, msg);
@@ -146,26 +144,26 @@ module.exports = function(RED) {
      * https://chat.hyperledger.org/channel/fabric-sdk-node?msg=wR4nkqvXuEWeEGDJb
      * https://gerrit.hyperledger.org/r/c/fabric-sdk-node/+/28006
      * https://fabric-sdk-node.github.io/release-1.4/tutorial-channel-events.html
-     * @param {object} channel the channel 
+     * @param {object} channel the channel
      * @param {string} peerName the name of the peer to connect to. Empty by default. If empty, will automatically get the first peer it finds in the channel and use it as the endpoint
      * @param {object} node the node object
      * @returns {Promise<Buffer>} promise
      */
-    async function eventHubFactory(channel, peerName = "", node) {
+    async function eventHubFactory(channel, peerName = '', node) {
         try {
-            if (peerName == "" || peerName === undefined || peerName === null) {
-                node.log("Generating event hubs for each peer of the org")
+            if (peerName === '' || peerName === undefined || peerName === null) {
+                node.log('Generating event hubs for each peer of the org');
                 const eventHubs = channel.getChannelEventHubsForOrg();
                 eventHubs.forEach(hub => {
                     addHubToHandler(node.id, hub);
                 });
-                node.log(eventHubsHandler[node.id].length + " event hubs from " + node.id);
+                node.log(eventHubsHandler[node.id].length + ' event hubs from ' + node.id);
                 return eventHubs;
             } else {
                 let eventHub = channel.newChannelEventHub(peerName);
                 addHubToHandler(node.id, eventHub);
-                node.log("Created event hub for peer " + peerName);
-                node.log(eventHubsHandler[node.id].length + " event hubs from " + node.id);
+                node.log('Created event hub for peer ' + peerName);
+                node.log(eventHubsHandler[node.id].length + ' event hubs from ' + node.id);
                 return eventHub;
             }
         } catch (error) {
@@ -180,7 +178,6 @@ module.exports = function(RED) {
      * Utility function not to overload the code. Stores the event hub object and "indexes" it with the fabric node that created it.
      * @param {string} nodeId the id of the node
      * @param {object} hub the event hub
-     * @returns {Promise<Buffer>} promise
      */
     function addHubToHandler(nodeId, hub) {
         if (eventHubsHandler.hasOwnProperty(nodeId)) {
@@ -193,15 +190,14 @@ module.exports = function(RED) {
     /**
      * Utility function not to overload the code. Disconect all event hubs of a node or a specified event hub of a node
      * @param {string} nodeId the id of the node
-     * @param {Array} hub Optional the event hub(s)
-     * @returns {Promise<Buffer>} promise
+     * @param {Array} eventHub Optional the event hub(s)
      */
     function disconnectEventHub(nodeId, eventHub) {
         if (eventHubsHandler.hasOwnProperty(nodeId)) {
             if (eventHub) {
                 eventHub.forEach(hub => {
                     if (eventHubsHandler[nodeId].includes(hub)) {
-                        var index = eventHubsHandler[nodeId].indexOf(hub);
+                        let index = eventHubsHandler[nodeId].indexOf(hub);
                         if (index > -1) {
                             eventHubsHandler[nodeId][index].disconnect();
                             eventHubsHandler[nodeId].splice(index, 1);
@@ -222,6 +218,11 @@ module.exports = function(RED) {
      * Sends all the events in an array or one by one in the msg.payload depending on the configuration
      * @param {channel} channel The channel on which create the event hub
      * @param {string} chaincodeName The name of the chaincode
+     * @param {string} peerName The name of the peer to connect to
+     * @param {number} startBlock The start block
+     * @param {number} endBlock The end block
+     * @param {boolean} timeout The timeout
+     * @param {string} eventName The event name
      * @param {Node} node node
      * @param {object} msg the msg object
      * @returns {Promise<Buffer>} promise
@@ -232,7 +233,7 @@ module.exports = function(RED) {
         let eventHub = await eventHubFactory(channel, peerName, node);
         startBlock = parseInt(startBlock);
         endBlock = parseInt(endBlock);
-        eventName = eventName === "" ? ".*" : eventName;
+        eventName = eventName === '' ? '.*' : eventName;
         let options = {};
         if (!isNaN(startBlock)) {
             options.startBlock = startBlock;
@@ -243,7 +244,7 @@ module.exports = function(RED) {
             //Required due to bug
             options.disconnect = false;
             // Because having endBlock without startBlock crashes the listener
-            if (!options.hasOwnProperty("startBlock")) {
+            if (!options.hasOwnProperty('startBlock')) {
                 options.startBlock = 0;
             }
         }
@@ -251,6 +252,7 @@ module.exports = function(RED) {
         let eventList = [];
         timeout = timeout === 'true' ? true : false;
         if (timeout) {
+            // eslint-disable-next-line no-var
             var eventTimeout = setTimeout(() => {
                 node.log('Expected timeout for chaincode event listener(s)');
                 if (event) {
@@ -258,20 +260,20 @@ module.exports = function(RED) {
                     disconnectEventHub(node.id, Array.isArray(eventHub) ? eventHub : [eventHub]);
                     node.log('Unregistered chaincode event listener(s)');
                     msg.payload = eventList;
-                    node.log(eventHubsHandler[node.id].length + " event hubs from " + node.id);
+                    node.log(eventHubsHandler[node.id].length + ' event hubs from ' + node.id);
                     node.send(msg);
                 }
 
             }, 2000);
-            eventTimeout['done'] = false;
+            eventTimeout.done = false;
         }
 
-        node.log('Event listener options: ' + JSON.stringify(options) + " " + eventName + " " + chaincodeName);
+        node.log('Event listener options: ' + JSON.stringify(options) + ' ' + eventName + ' ' + chaincodeName);
         if (Array.isArray(eventHub)) {
             eventHub.forEach(hub => {
                 event = chaincodeEventFactory(hub, chaincodeName, eventName, node, msg, timeout, eventTimeout, options, eventList);
                 hub.connect(true);
-                node.log("Registered event listener");
+                node.log('Registered event listener');
             });
         } else {
             event = chaincodeEventFactory(eventHub, chaincodeName, eventName, node, msg, timeout, eventTimeout, options, eventList);
@@ -353,39 +355,39 @@ module.exports = function(RED) {
             this.connection = RED.nodes.getNode(config.connection);
             try {
                 const identityName = node.connection.identityName;
-                var channelName = typeof msg.payload.channelName === 'string' ? msg.payload.channelName : config.channelName;
-                var contractName = typeof msg.payload.contractName === 'string' ? msg.payload.contractName : config.contractName;
-                var actionType = typeof msg.payload.actionType === 'string' ? msg.payload.actionType : config.actionType;
-                node.log("CONFIG => " + channelName + " " + contractName + " " + actionType);
+                const channelName = typeof msg.payload.channelName === 'string' ? msg.payload.channelName : config.channelName;
+                const contractName = typeof msg.payload.contractName === 'string' ? msg.payload.contractName : config.contractName;
+                const actionType = typeof msg.payload.actionType === 'string' ? msg.payload.actionType : config.actionType;
+                node.log('CONFIG => ' + channelName + ' ' + contractName + ' ' + actionType);
                 node.log('using connection: ' + identityName);
                 if (actionType === 'submit') {
                     const networkInfo = await connect(identityName, channelName, contractName, node);
-                    var result = await submit(networkInfo.contract, msg.payload, node);
+                    const result = await submit(networkInfo.contract, msg.payload, node);
                     msg.payload = result;
                     node.status({});
                     node.send(msg);
                 } else if (actionType === 'evaluate') {
                     const networkInfo = await connect(identityName, channelName, contractName, node);
-                    var result = await evaluate(networkInfo.contract, msg.payload, node);
+                    const result = await evaluate(networkInfo.contract, msg.payload, node);
                     msg.payload = result;
                     node.status({});
                     node.send(msg);
                 } else if (actionType === 'event') {
                     const networkInfo = await connect(identityName, channelName, contractName, node);
-                    var channel = networkInfo.network.getChannel();
-                    var result = await subscribeToEvent(channel, contractName, msg.payload.peerName, msg.payload.startBlock,
+                    const channel = networkInfo.network.getChannel();
+                    await subscribeToEvent(channel, contractName, msg.payload.peerName, msg.payload.startBlock,
                         msg.payload.endBlock, msg.payload.timeout, msg.payload.eventName, node, msg);
                 } else if (actionType === 'block') {
                     const networkInfo = await connect(identityName, channelName, contractName, node);
-                    var channel = networkInfo.network.getChannel();
-                    var result = await queryBlock(channel, msg.payload.blockNumber);
+                    const channel = networkInfo.network.getChannel();
+                    const result = await queryBlock(channel, msg.payload.blockNumber);
                     msg.payload = result;
                     node.send(msg);
                     node.status({});
                 } else if (actionType === 'transaction') {
                     const networkInfo = await connect(identityName, channelName, contractName, node);
-                    var channel = networkInfo.network.getChannel();
-                    var result = await queryTransaction(channel, msg.payload.transactionId);
+                    const channel = networkInfo.network.getChannel();
+                    const result = await queryTransaction(channel, msg.payload.transactionId);
                     msg.payload = result;
                     node.send(msg);
                     node.status({});
@@ -396,9 +398,9 @@ module.exports = function(RED) {
             }
         });
         node.on('close', () => {
-            node.log("Node is closing");
+            node.log('Node is closing');
             if (eventHubsHandler.hasOwnProperty(node.id)) {
-                node.log("Disconnecting event hubs generated by node " + node.id);
+                node.log('Disconnecting event hubs generated by node ' + node.id);
                 disconnectEventHub(node.id);
                 delete eventHubsHandler[node.id];
             }
