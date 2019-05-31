@@ -106,7 +106,10 @@ limitations under the License.
         <label for="node-input-timeout"><i class="fa"></i>Timeout</label>
         <input type="text" id="node-input-timeout" placeholder="" />
     </div>
-
+    <div class="form-row">
+        <label for="node-input-peerName"><i class="fa"></i>Peer name</label>
+        <input type="text" id="node-input-peerName" placeholder="" />
+    </div>
 </script>
 <script type="text/x-red" data-help-name="fabric-out">
     <p>Hyperledger Fabric output node. Submit or evaluate transactions</p>
@@ -166,15 +169,20 @@ limitations under the License.
         </li>
         <li>Event
             <ul>
-                <li>The timeout allows you to change the way the results are sent back to you. It is <code>"true"</code> by default. When <code>"true"</code>, it returns the events all at once in an array. When it is <code>"false"</code>, it returns the events
-                    one by one in <code>msg.payload</code> and will not stop to listen</li>
+                <li>The timeout allows you to change the way the results are sent back to you. It is <code>"false"</code> by default. When <code>"true"</code>, it returns the events all at once in an array. When it is <code>"false"</code>, it returns the
+                    events one by one in <code>msg.payload</code> and will not stop to listen</li>
                 <li><code>"startBlock"</code> and <code>"endBlock"</code> can be specified. When not, starts from 0 and never stops.</li>
                 <li><code>"eventName"</code> is the name of the event to match. Keep in mind that it accepts regular expressions.</li>
                 <li><code>"contractName"</code> is the name of the contract (chaincode) to listen events on.</li>
-                <li><code>"orgName"</code> is the name of the organization of the peer you connect to</li>
-                <li><code>"peerName"</code> is the name of the peer you connect to</li>
+                <li><code>"peerName"</code> is the name of the peer you connect to
+                    <ul>
+                        <li> If <b>NOT</b> set, the node will listen on all known peers (defined in your connection profile). As a consequence, you will most likely have duplicates events. Note that the node does not indicates from which peer an event comes
+                            from.
+                        </li>
+                    </ul>
+                </li>
                 <li>The type of action the node should perform (<code>event</code>) should be set like <code>msg.payload.actionType</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
-                <li>Example: <code>{"startBlock": "myStartBlock","endBlock": "myEndBlock","timeout": "myTimeout","eventName": "myEventName","contractName": "myContractName","actionType": "event","orgName": "myOrgName","peerName": "myPeerName"}</code></li>
+                <li>Example: <code>{"startBlock": "myStartBlock","endBlock": "myEndBlock","timeout": "true|false","eventName": "myEventName","contractName": "myContractName","actionType": "event","peerName": "myPeerName"}</code></li>
             </ul>
         </li>
     </ul>
@@ -182,18 +190,17 @@ limitations under the License.
         <ul>
             <li>The type of action the node should perform (<code>block</code>) should be set like <code>msg.payload.actionType</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
             <li>The number of the block to use should be set like <code>msg.payload.blockNumber</code>.
-                <li>Example: <code>{"actionType": "block","orgName": "myOrgName","peerName": "myPeerName","blockNumber": myBlockNumber}</code> </li>
+                <li>Example: <code>{"actionType": "block","blockNumber": myBlockNumber}</code> </li>
         </ul>
         </li>
-        <li>transaction
+        <li>Transaction
             <ul>
                 <li>The type of action the node should perform (<code>transaction</code>) should be set like <code>msg.payload.actionType</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
                 <li>The id of the transaction to query should be set like <code>msg.payload.transactionId</code> </li>
-                <li>Example: <code>{"actionType": "transaction","orgName": "myOrgName","peerName": "myPeerName","transactionId": "myTxId"}</code> </li>
+                <li>Example: <code>{"actionType": "transaction","transactionId": "myTxId"}</code> </li>
             </ul>
         </li>
-        <p>Data returned from a transaction will be in <code>msg.payload</></p>
-  <p>The <code>payload</code> will be a buffer and you will need to deserialize the data downstream</p>
+        <p>The <code>payload</code> will be a buffer and you will need to deserialize the data downstream</p>
         <p>For example <code>msg.payload.toString()</code>
 
 </script>
@@ -232,9 +239,22 @@ limitations under the License.
 </script>
 <script type="text/x-red" data-help-name="fabric-in">
     <p>Hyperledger Fabric input node. Subscribe to events emitted by a blockchain</p>.
-    <p>Will create a message with the structure <code>{"eventName" : "myEvent", "payload": "myPayload"}</code></p>
-    <p>The <code>payload</code> will be a buffer and you will need to deserialize the data downstream</p>
-    <p>For example <code>msg.payload.toString()</code>
+    <p>This node behaves differently depending on its configuration</p>
+    <li>Return format
+        <ul>
+            <li> If the <code>timeout</code> value is set to <code>true</code>, all events will be returned at once in an array in <code>msg.payload</code></li>
+            <li> If the <code>timeout</code> value is set to <code>false</code>, events will be returned one by one in <code>msg.payload</code></li>
+            <li> If the <code>timeout</code> value is <b>NOT</b> set, the default value will be <code>false</code></li>
+            <li> <b>Important</b>: if <code>timeout</code> is set to <code>false</code>, the listener will never stop itself, even if the <code>endBlock</code> property is set.
+        </ul>
+        </li>
+        <li>Target peer
+            <ul>
+                <li> If the <code>peerName</code> value is <b>NOT</b> set, the node will listen on all known peers (defined in your connection profile). As a consequence, you will most likely have duplicates events. Note that the node does not indicates from
+                    which peer an event comes from.</li>
+                <li> If the <code>peerName</code> value is set, the node will listen only on the peer with the given name.</li>
+            </ul>
+        </li>
 </script>
 <script type="text/javascript">
     RED.nodes.registerType('fabric-in', {
@@ -273,6 +293,10 @@ limitations under the License.
                 value: 'true',
                 required: false
             },
+            peerName: {
+                value: '',
+                required: false
+            }
         },
         inputs: 0,
         outputs: 1,
