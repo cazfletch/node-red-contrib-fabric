@@ -110,6 +110,7 @@ limitations under the License.
         <label for="node-input-peerName"><i class="fa"></i>Peer name</label>
         <input type="text" id="node-input-peerName" placeholder="" />
     </div>
+
 </script>
 <script type="text/x-red" data-help-name="fabric-out">
     <p>Hyperledger Fabric output node. Submit or evaluate transactions</p>
@@ -238,23 +239,54 @@ limitations under the License.
     });
 </script>
 <script type="text/x-red" data-help-name="fabric-in">
-    <p>Hyperledger Fabric input node. Subscribe to events emitted by a blockchain</p>.
-    <p>This node behaves differently depending on its configuration</p>
-    <li>Return format
-        <ul>
-            <li> If the <code>timeout</code> value is set to <code>true</code>, all events will be returned at once in an array in <code>msg.payload</code></li>
-            <li> If the <code>timeout</code> value is set to <code>false</code>, events will be returned one by one in <code>msg.payload</code></li>
-            <li> If the <code>timeout</code> value is <b>NOT</b> set, the default value will be <code>false</code></li>
-            <li> <b>Important</b>: if <code>timeout</code> is set to <code>false</code>, the listener will never stop itself, even if the <code>endBlock</code> property is set.
-        </ul>
-        </li>
-        <li>Target peer
-            <ul>
-                <li> If the <code>peerName</code> value is <b>NOT</b> set, the node will listen on all known peers (defined in your connection profile). As a consequence, you will most likely have duplicates events. Note that the node does not indicates from
-                    which peer an event comes from.</li>
-                <li> If the <code>peerName</code> value is set, the node will listen only on the peer with the given name.</li>
-            </ul>
-        </li>
+    <p>Hyperledger Fabric input node. Subscribe to events emitted by a blockchain</p>
+    <dl class="message-properties">
+        <dt>channelName
+                    <span class="property-type">string</span>
+                </dt>
+        <dd> the name of the channel </dd>
+        <dt>contractName
+            <span class="property-type">string</span>
+        </dt>
+        <dd> the name of the contract </dd>
+        <dt class="optional">peerName
+            <span class="property-type">string</span>
+        </dt>
+        <dd> the name of the peer to connect to. If this value is not provided, the node will listen for events on all peers described in the connection profile. Consequently, expect duplicates on events output. </dd>
+        <dt class="optional">startBlock
+                <span class="property-type">string</span>
+            </dt>
+        <dd> the block to start listen on. If this value is not provided, will start from 0 </dd>
+        <dt class="optional">endBlock
+                <span class="property-type">string</span>
+            </dt>
+        <dd> the last block to listen on. If this value is not provided, will listen up to latest </dd>
+        <dt class="optional">timeout
+                <span class="property-type">string</span>
+            </dt>
+        <dd> Indicates if the listener should stop. Pass it as a string like <code>"true"</code>. If not provided, will be <code>false</code> by default</dd>
+        <dt class="optional">eventName
+                <span class="property-type">string</span>
+            </dt>
+        <dd> The name of the event to listen on. If not provided, will listen for all the events emmited by the contract</dd>
+    </dl>
+
+
+    <h2> The node returns event on different format, based on its configuration</h2>
+    <dl class="message-properties">
+        <h3>Array</h3>
+        <dt>payload
+                    <span class="property-type">array</span>
+                </dt>
+        <dd> If <code>timeout</code> is <code>true</code>, all events will be returned at once in an array </dd>
+        <h3>JSON</h3>
+        <dt>payload
+                    <span class="property-type">JSON</span>
+                </dt>
+        <dd>If <code>timeout</code> is <code>false</code>, all events will be returned one by one as a JSON</dd>
+
+    </dl>
+
 </script>
 <script type="text/javascript">
     RED.nodes.registerType('fabric-in', {
