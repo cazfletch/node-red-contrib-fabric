@@ -90,26 +90,30 @@ limitations under the License.
         <label for="node-input-contractName"><i class="fa"></i>Contract Name</label>
         <input type="text" id="node-input-contractName" placeholder="" />
     </div>
-    <div class="form-row">
-        <label for="node-input-eventName"><i class="fa"></i>Event Name</label>
-        <input type="text" id="node-input-eventName" placeholder=".*" />
-    </div>
-    <div class="form-row">
-        <label for="node-input-startBlock"><i class="fa"></i>Start Block</label>
-        <input type="text" id="node-input-startBlock" placeholder="" />
-    </div>
-    <div class="form-row">
-        <label for="node-input-endBlock"><i class="fa"></i>End Block</label>
-        <input type="text" id="node-input-endBlock" placeholder="" />
-    </div>
-    <div class="form-row">
-        <label for="node-input-timeout"><i class="fa"></i>Timeout</label>
-        <input type="text" id="node-input-timeout" placeholder="" />
-    </div>
-    <div class="form-row">
-        <label for="node-input-peerName"><i class="fa"></i>Peer name</label>
-        <input type="text" id="node-input-peerName" placeholder="" />
-    </div>
+
+    <details>
+        <summary> Optional configuration </summary>
+        <div class="form-row">
+            <label for="node-input-eventName"><i class="fa"></i>Event Name</label>
+            <input type="text" id="node-input-eventName" placeholder=".*" />
+        </div>
+        <div class="form-row">
+            <label for="node-input-startBlock"><i class="fa"></i>Start Block</label>
+            <input type="text" id="node-input-startBlock" placeholder="" />
+        </div>
+        <div class="form-row">
+            <label for="node-input-endBlock"><i class="fa"></i>End Block</label>
+            <input type="text" id="node-input-endBlock" placeholder="" />
+        </div>
+        <div class="form-row">
+            <label for="node-input-timeout"><i class="fa"></i>Timeout</label>
+            <input type="text" id="node-input-timeout" placeholder="" />
+        </div>
+        <div class="form-row">
+            <label for="node-input-peerName"><i class="fa"></i>Peer name</label>
+            <input type="text" id="node-input-peerName" placeholder="" />
+        </div>
+    </details>
 
 </script>
 <script type="text/x-red" data-help-name="fabric-out">
@@ -249,27 +253,35 @@ limitations under the License.
             <span class="property-type">string</span>
         </dt>
         <dd> the name of the contract </dd>
-        <dt class="optional">peerName
-            <span class="property-type">string</span>
-        </dt>
-        <dd> the name of the peer to connect to. If this value is not provided, the node will listen for events on all peers described in the connection profile. Consequently, expect duplicates on events output. </dd>
-        <dt class="optional">startBlock
-                <span class="property-type">string</span>
-            </dt>
-        <dd> the block to start listen on. If this value is not provided, will start from 0 </dd>
-        <dt class="optional">endBlock
-                <span class="property-type">string</span>
-            </dt>
-        <dd> the last block to listen on. If this value is not provided, will listen up to latest </dd>
-        <dt class="optional">timeout
-                <span class="property-type">string</span>
-            </dt>
-        <dd> Indicates if the listener should stop. Pass it as a string like <code>"true"</code>. If not provided, will be <code>false</code> by default</dd>
-        <dt class="optional">eventName
-                <span class="property-type">string</span>
-            </dt>
-        <dd> The name of the event to listen on. If not provided, will listen for all the events emmited by the contract</dd>
+
     </dl>
+    <details>
+        <summary> Optional configuration </summary>
+        <dl class="message-properties">
+            <dt class="optional">eventName
+                        <span class="property-type">string</span>
+                    </dt>
+            <dd> The name of the event to listen on. If not provided, will listen for all the events emmited by the contract</dd>
+            <dt class="optional">startBlock
+                <span class="property-type">string</span>
+            </dt>
+            <dd> the block to start listen on. If this value is not provided, will start from 0 </dd>
+            <dt class="optional">endBlock
+                    <span class="property-type">string</span>
+                </dt>
+            <dd> the last block to listen on. If this value is not provided, will listen up to latest </dd>
+            <dt class="optional">timeout
+                    <span class="property-type">string</span>
+                </dt>
+            <dd> Indicates if the listener should stop. Pass it as a string like <code>"true"</code>. If not provided, will be <code>false</code> by default</dd>
+            <dt class="optional">peerName
+                    <span class="property-type">string</span>
+                </dt>
+            <dd> the name of the peer to connect to. If this value is not provided, the node will listen for events on all peers described in the connection profile. Consequently, expect duplicates on events output. </dd>
+
+        </dl>
+
+    </details>
 
 
     <h2> The node returns event on different format, based on its configuration</h2>
