@@ -11,7 +11,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-
 <script type="text/x-red" data-template-name="fabric-out">
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
@@ -20,17 +19,17 @@ limitations under the License.
 
     <div class="form-row">
         <label for="node-input-connection"><i class="fa"></i>Connection</label>
-        <input type="select" id="node-input-connection" placeholder="Connection"/>
+        <input type="select" id="node-input-connection" placeholder="Connection" />
     </div>
 
-     <div class="form-row">
+    <div class="form-row">
         <label for="node-input-channelName"><i class="fa"></i>Channel Name</label>
-        <input type="text" id="node-input-channelName" placeholder=""/>
+        <input type="text" id="node-input-channelName" placeholder="" />
     </div>
 
     <div class="form-row">
         <label for="node-input-contractName"><i class="fa"></i>Contract Name</label>
-        <input type="text" id="node-input-contractName" placeholder=""/>
+        <input type="text" id="node-input-contractName" placeholder="" />
     </div>
 
     <div class="form-row">
@@ -41,7 +40,6 @@ limitations under the License.
         </select>
     </div>
 </script>
-
 <script type="text/x-red" data-template-name="fabric-mid">
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
@@ -50,17 +48,17 @@ limitations under the License.
 
     <div class="form-row">
         <label for="node-input-connection"><i class="fa"></i>Connection</label>
-        <input type="select" id="node-input-connection" placeholder="Connection"/>
+        <input type="select" id="node-input-connection" placeholder="Connection" />
     </div>
 
-     <div class="form-row">
+    <div class="form-row">
         <label for="node-input-channelName"><i class="fa"></i>Channel Name</label>
-        <input type="text" id="node-input-channelName" placeholder=""/>
+        <input type="text" id="node-input-channelName" placeholder="" />
     </div>
 
     <div class="form-row">
         <label for="node-input-contractName"><i class="fa"></i>Contract Name</label>
-        <input type="text" id="node-input-contractName" placeholder=""/>
+        <input type="text" id="node-input-contractName" placeholder="" />
     </div>
 
     <div class="form-row">
@@ -68,10 +66,13 @@ limitations under the License.
         <select id="node-input-actionType">
             <option value="submit">Submit Transaction</option>
             <option value="evaluate">Evaluate Transaction</option>
+            <option value="event">Listen Event</option>
+            <option value="block">Query Block</option>
+            <option value="transaction">Query Transaction</option>
         </select>
     </div>
-</script>
 
+</script>
 <script type="text/x-red" data-template-name="fabric-in">
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
@@ -79,111 +80,274 @@ limitations under the License.
     </div>
     <div class="form-row">
         <label for="node-input-connection"><i class="fa"></i>Connection</label>
-        <input type="select" id="node-input-connection" placeholder="Connection"/>
+        <input type="select" id="node-input-connection" placeholder="Connection" />
     </div>
-
-     <div class="form-row">
+    <div class="form-row">
         <label for="node-input-channelName"><i class="fa"></i>Channel Name</label>
-        <input type="text" id="node-input-channelName" placeholder=""/>
+        <input type="text" id="node-input-channelName" placeholder="" />
     </div>
-
     <div class="form-row">
         <label for="node-input-contractName"><i class="fa"></i>Contract Name</label>
-        <input type="text" id="node-input-contractName" placeholder=""/>
+        <input type="text" id="node-input-contractName" placeholder="" />
     </div>
 
-    <div class="form-row">
-        <label for="node-input-eventName"><i class="fa"></i>Event Name</label>
-        <input type="text" id="node-input-eventName" placeholder=".*"/>
-    </div>
+    <details>
+        <summary> Optional configuration </summary>
+        <div class="form-row">
+            <label for="node-input-eventName"><i class="fa"></i>Event Name</label>
+            <input type="text" id="node-input-eventName" placeholder=".*" />
+        </div>
+        <div class="form-row">
+            <label for="node-input-startBlock"><i class="fa"></i>Start Block</label>
+            <input type="text" id="node-input-startBlock" placeholder="" />
+        </div>
+        <div class="form-row">
+            <label for="node-input-endBlock"><i class="fa"></i>End Block</label>
+            <input type="text" id="node-input-endBlock" placeholder="" />
+        </div>
+        <div class="form-row">
+            <label for="node-input-timeout"><i class="fa"></i>Timeout</label>
+            <input type="text" id="node-input-timeout" placeholder="" />
+        </div>
+        <div class="form-row">
+            <label for="node-input-peerName"><i class="fa"></i>Peer name</label>
+            <input type="text" id="node-input-peerName" placeholder="" />
+        </div>
+    </details>
+
 </script>
-
 <script type="text/x-red" data-help-name="fabric-out">
-  <p>Hyperledger Fabric output node. Submit or evaluate transactions</p>
-  <p>The name of the transaction should be set like <code>msg.payload.transactionName</code></p>
-  <p>The arguments for the transaction should be set like <code>msg.payload.args</code>. The arguments should be an array of strings</p>
-  <p>For example <code>{"transactionName: "myTransaction", "args": ["arg1", "arg2"]}</code></p>
+    <p>Hyperledger Fabric output node. Submit or evaluate transactions</p>
+    <p>The name of the transaction should be set like <code>msg.payload.transactionName</code></p>
+    <p>The arguments for the transaction should be set like <code>msg.payload.args</code>. The arguments should be an array of strings</p>
+    <p>For example <code>{"transactionName: "myTransaction", "args": ["arg1", "arg2"]}</code></p>
 </script>
-
 <script type="text/javascript">
     RED.nodes.registerType('fabric-out', {
-        category : 'Hyperledger',
-        color : '#E6E0F8',
-        paletteLabel : 'Hyperledger Fabric',
-        defaults : {
-            name : {value : ''},
-            connection : {value : '', type : 'fabric-config'},
-            channelName : {value : '', required : true},
-            contractName : {value : '', required : true},
-            actionType : {value : 'submit'}
+        category: 'Hyperledger',
+        color: '#E6E0F8',
+        paletteLabel: 'Hyperledger Fabric - Out',
+        defaults: {
+            name: {
+                value: ''
+            },
+            connection: {
+                value: '',
+                type: 'fabric-config'
+            },
+            channelName: {
+                value: '',
+                required: true
+            },
+            contractName: {
+                value: '',
+                required: true
+            },
+            actionType: {
+                value: 'submit'
+            }
         },
-        inputs : 1,
-        outputs : 0,
-        icon : 'icon.png',
-        align : 'right',
-        label : function () {
-            return this.name || 'Hyperledger Fabric';
+        inputs: 1,
+        outputs: 0,
+        icon: 'icon.png',
+        align: 'right',
+        label: function() {
+            return this.name || 'Hyperledger Fabric - Out';
         }
     });
 </script>
 
 <script type="text/x-red" data-help-name="fabric-mid">
-<p>Hyperledger Fabric mid node. Submit or evaluate transactions</p>
-  <p>The name of the transaction should be set like <code>msg.payload.transactionName</code></p>
-  <p>The arguments for the transaction should be set like <code>msg.payload.args</code>. The arguments should be an array of strings</p>
-  <p>For example <code>{"transactionName: "myTransaction", "args": ["arg1", "arg2"]}</code></p>
-  <p>Data returned from a transaction will be in <code>msg.payload</></p>
-  <p>The <code>payload</code> will be a buffer and you will need to deserialize the data downstream</p>
-  <p>For example <code>msg.payload.toString()</code>
-</script>
+    <p>Hyperledger Fabric mid node. Submit or evaluate transactions, listen for events, query a block or query a transaction</p>
 
+
+    <ul>
+        <li>Submit/evaluate
+            <ul>
+                <li>the arguments for the transaction should be set like <code>msg.payload.transactionArgs</code>.</li>
+                <li>The arguments should be an array of strings</li>
+                <li>The name of the transaction should be set like <code>msg.payload.transactionName</code></li>
+                <li>The type of action the node should perform (<code>submit</code> or <code>evaluate</code>) should be set like <code>msg.payload.actionType</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
+                <li>Example: <code>{"transactionArgs": ["ARG0","ARG1","etc."],"transactionName": "myTxName","actionType": "submit","contractName": "myContractName"
+                }</code> </li>
+            </ul>
+        </li>
+        <li>Event
+            <ul>
+                <li>The timeout allows you to change the way the results are sent back to you. It is <code>"false"</code> by default. When <code>"true"</code>, it returns the events all at once in an array. When it is <code>"false"</code>, it returns the
+                    events one by one in <code>msg.payload</code> and will not stop to listen</li>
+                <li><code>"startBlock"</code> and <code>"endBlock"</code> can be specified. When not, starts from 0 and never stops.</li>
+                <li><code>"eventName"</code> is the name of the event to match. Keep in mind that it accepts regular expressions.</li>
+                <li><code>"contractName"</code> is the name of the contract (chaincode) to listen events on.</li>
+                <li><code>"peerName"</code> is the name of the peer you connect to
+                    <ul>
+                        <li> If <b>NOT</b> set, the node will listen on all known peers (defined in your connection profile). As a consequence, you will most likely have duplicates events. Note that the node does not indicates from which peer an event comes
+                            from.
+                        </li>
+                    </ul>
+                </li>
+                <li>The type of action the node should perform (<code>event</code>) should be set like <code>msg.payload.actionType</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
+                <li>Example: <code>{"startBlock": "myStartBlock","endBlock": "myEndBlock","timeout": "true|false","eventName": "myEventName","contractName": "myContractName","actionType": "event","peerName": "myPeerName"}</code></li>
+            </ul>
+        </li>
+    </ul>
+    <li>Block
+        <ul>
+            <li>The type of action the node should perform (<code>block</code>) should be set like <code>msg.payload.actionType</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
+            <li>The number of the block to use should be set like <code>msg.payload.blockNumber</code>.
+                <li>Example: <code>{"actionType": "block","blockNumber": myBlockNumber}</code> </li>
+        </ul>
+        </li>
+        <li>Transaction
+            <ul>
+                <li>The type of action the node should perform (<code>transaction</code>) should be set like <code>msg.payload.actionType</code>. The value set in the node will be overwritten by the value in <code>msg.payload</code></li>
+                <li>The id of the transaction to query should be set like <code>msg.payload.transactionId</code> </li>
+                <li>Example: <code>{"actionType": "transaction","transactionId": "myTxId"}</code> </li>
+            </ul>
+        </li>
+        <p>The <code>payload</code> will be a buffer and you will need to deserialize the data downstream</p>
+        <p>For example <code>msg.payload.toString()</code>
+
+</script>
 <script type="text/javascript">
     RED.nodes.registerType('fabric-mid', {
-        category : 'Hyperledger',
-        color : '#E6E0F8',
-        paletteLabel : 'Hyperledger Fabric',
-        defaults : {
-            name : {value : ''},
-            connection : {value : '', type : 'fabric-config'},
-            channelName : {value : '', required : true},
-            contractName : {value : '', required : true},
-            actionType : {value : 'submit'}
+        category: 'Hyperledger',
+        color: '#E6E0F8',
+        paletteLabel: 'Hyperledger Fabric - Mid',
+        defaults: {
+            name: {
+                value: ''
+            },
+            connection: {
+                value: '',
+                type: 'fabric-config'
+            },
+            channelName: {
+                value: '',
+                required: false
+            },
+            contractName: {
+                value: '',
+                required: false
+            },
+            actionType: {
+                value: 'submit'
+            }
         },
-        inputs : 1,
-        outputs : 1,
-        icon : 'icon.png',
-        label : function () {
-            return this.name || 'Hyperledger Fabric';
-        }
+        inputs: 1,
+        outputs: 1,
+        icon: 'icon.png',
+        label: function() {
+            return this.name || 'Hyperledger Fabric - Mid';
+        },
     });
 </script>
-
 <script type="text/x-red" data-help-name="fabric-in">
-  <p>Hyperledger Fabric input node. Subscribe to events emitted by a blockchain</p>.
-  <p>Will create a message with the structure <code>{"eventName" : "myEvent", "payload": "myPayload"}</code></p>
-  <p>The <code>payload</code> will be a buffer and you will need to deserialize the data downstream</p>
-  <p>For example <code>msg.payload.toString()</code>
-</script>
+    <p>Hyperledger Fabric input node. Subscribe to events emitted by a blockchain</p>
+    <dl class="message-properties">
+        <dt>channelName
+                    <span class="property-type">string</span>
+                </dt>
+        <dd> the name of the channel </dd>
+        <dt>contractName
+            <span class="property-type">string</span>
+        </dt>
+        <dd> the name of the contract </dd>
 
+    </dl>
+    <details>
+        <summary> Optional configuration </summary>
+        <dl class="message-properties">
+            <dt class="optional">eventName
+                        <span class="property-type">string</span>
+                    </dt>
+            <dd> The name of the event to listen on. If not provided, will listen for all the events emmited by the contract</dd>
+            <dt class="optional">startBlock
+                <span class="property-type">string</span>
+            </dt>
+            <dd> the block to start listen on. If this value is not provided, will start from 0 </dd>
+            <dt class="optional">endBlock
+                    <span class="property-type">string</span>
+                </dt>
+            <dd> the last block to listen on. If this value is not provided, will listen up to latest </dd>
+            <dt class="optional">timeout
+                    <span class="property-type">string</span>
+                </dt>
+            <dd> Indicates if the listener should stop. Pass it as a string like <code>"true"</code>. If not provided, will be <code>false</code> by default</dd>
+            <dt class="optional">peerName
+                    <span class="property-type">string</span>
+                </dt>
+            <dd> the name of the peer to connect to. If this value is not provided, the node will listen for events on all peers described in the connection profile. Consequently, expect duplicates on events output. </dd>
+
+        </dl>
+
+    </details>
+
+
+    <h2> The node returns event on different format, based on its configuration</h2>
+    <dl class="message-properties">
+        <h3>Array</h3>
+        <dt>payload
+                    <span class="property-type">array</span>
+                </dt>
+        <dd> If <code>timeout</code> is <code>true</code>, all events will be returned at once in an array </dd>
+        <h3>JSON</h3>
+        <dt>payload
+                    <span class="property-type">JSON</span>
+                </dt>
+        <dd>If <code>timeout</code> is <code>false</code>, all events will be returned one by one as a JSON</dd>
+
+    </dl>
+
+</script>
 <script type="text/javascript">
     RED.nodes.registerType('fabric-in', {
         category: 'Hyperledger',
         color: "#E6E0F8",
         paletteLabel: "Hyperledger Fabric",
         defaults: {
-            name: {value: ""},
-            connection : {value : '', type : 'fabric-config'},
-            channelName : {value : '', required : true},
-            contractName : {value : '', required : true},
-            eventName : {value : '.*', required : false},
+            name: {
+                value: ""
+            },
+            connection: {
+                value: '',
+                type: 'fabric-config'
+            },
+            channelName: {
+                value: '',
+                required: true
+            },
+            contractName: {
+                value: '',
+                required: true
+            },
+            eventName: {
+                value: '.*',
+                required: false
+            },
+            startBlock: {
+                value: '',
+                required: false
+            },
+            endBlock: {
+                value: '',
+                required: false
+            },
+            timeout: {
+                value: 'true',
+                required: false
+            },
+            peerName: {
+                value: '',
+                required: false
+            }
         },
-        inputs : 0,
-        outputs : 1,
-        icon : "icon.png",
-        align : "left",
-        label : function () {
+        inputs: 0,
+        outputs: 1,
+        icon: "icon.png",
+        align: "left",
+        label: function() {
             return this.name || "Hyperledger Fabric";
         }
     });
 </script>
-

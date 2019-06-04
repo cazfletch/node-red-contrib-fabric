@@ -1,3 +1,9 @@
+- [node-red-contrib-fabric](#node-red-contrib-fabric)
+  - [Nodes](#nodes)
+    - [Hyperledger-Fabric-Out](#hyperledger-fabric-out)
+    - [Hyperledger-Fabric-Mid](#hyperledger-fabric-mid)
+    - [Hyperledger-Fabric-In](#hyperledger-fabric-in)
+  - [License <a name="license"></a>](#license-a-name%22license%22a)
 # node-red-contrib-fabric
 A set of nodes for interacting with Hyperledger Fabric
 
@@ -6,7 +12,7 @@ A set of nodes for interacting with Hyperledger Fabric
 A node red output node that allows you to submit or evaluate a transaction.
 
 ### Hyperledger-Fabric-Mid
-A node red mid flow node that allows you to submit or evaluate a transaction and get the result.
+A node red mid flow node that allows you to submit or evaluate a transaction and get the result, query the world state, listen for event(s), query a block by its number and query a transaction by its ID.
 
 ### Hyperledger-Fabric-In
 A node red input node that subscribes to events from a blockchain.
