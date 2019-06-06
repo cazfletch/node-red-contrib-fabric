@@ -18,25 +18,20 @@ module.exports = function(RED) {
     const fabricNetwork = require('fabric-network');
     const fabricClient = require('fabric-client');
 
-    let gateway = new fabricNetwork.Gateway();
-    let gatewayConnected = false;
-
     // The list of the event hubs, "indexed" by the node id
     // Think of it like a C# dictionnary
     let eventHubsHandler = {};
 
-
+    let gatewaysHandler = {};
 
     /**
-     *
+     * Builds a gateway and its options
      * @param {string} identityName identityName
-     * @param {string} channelName channel
-     * @param {string} contractName contract
      * @param {Node} node node
      * @returns {PromiseLike<Contract | never>} promise
      */
-    async function connect(identityName, channelName, contractName, node) {
-        node.log(`connect ${identityName} ${channelName} ${contractName}`);
+    async function gatewayFactory(identityName, node) {
+        let gateway = new fabricNetwork.Gateway();
         const parsedProfile = JSON.parse(node.connection.connectionProfile);
         const client = await fabricClient.loadFromConfig(parsedProfile);
         node.log('loaded client from connection profile');
@@ -51,18 +46,52 @@ module.exports = function(RED) {
                 asLocalhost: true
             }
         };
-        if (!gatewayConnected) {
-            await gateway.connect(parsedProfile, options);
-            node.log('connected to gateway');
-            gatewayConnected = true;
-        } else {
-            node.log("Gateway already connected");
-        }
+        gatewaysHandler[identityName] = {
+            gate: gateway,
+            options: options,
+            profile: parsedProfile,
+            isConnected: false
+        };
+        node.log('Create gateway for ' + identityName);
+        return gatewaysHandler[identityName];
+    }
 
-        const network = await gateway.getNetwork(channelName);
+    /**
+     *  returns the existing gateway linked to the name of the identity or builds a new one if none exists for this identity
+     * @param {string} identityName identityName
+     * @param {Node} node node
+     * @returns {PromiseLike<Contract | never>} promise
+     */
+    async function getGateway(identityName, node) {
+        if (gatewaysHandler.hasOwnProperty(identityName)) {
+            return gatewaysHandler[identityName];
+        } else {
+            return await gatewayFactory(identityName, node);
+        }
+    }
+
+    /**
+     *
+     * @param {string} identityName identityName
+     * @param {string} channelName channel
+     * @param {string} contractName contract
+     * @param {Node} node node
+     * @returns {PromiseLike<Contract | never>} promise
+     */
+    async function connect(identityName, channelName, contractName, node) {
+        let gateway = await getGateway(identityName, node);
+        if (!gateway.isConnected) {
+            await gateway.gate.connect(gateway.profile, gateway.options);
+            gateway.isConnected = true;
+            node.log('Connected to gateway');
+        } else {
+            node.log('Already connected to gateway');
+        }
+        const network = await gateway.gate.getNetwork(channelName);
         node.log('got network');
         const contract = await network.getContract(contractName);
         node.log('got contract');
+        node.log('Using gateway with ' + JSON.parse(gateway.gate.getCurrentIdentity()).name);
         return { contract: contract, network: network };
     }
 
@@ -138,10 +167,10 @@ module.exports = function(RED) {
                 if (timeout.done && error.message === 'ChannelEventHub has been shutdown') {
                     node.log('Expected chaincode listener shutdown');
                 } else {
-
+                    node.log('TODO HERE');
                 }
             } else if (error.message === 'ChannelEventHub has been shutdown') {
-                node.log("Channel event hub has been shutdown ");
+                node.log('Channel event hub has been shutdown ');
                 node.log(error);
             } else {
                 console.log(error);
