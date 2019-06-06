@@ -19,6 +19,7 @@ module.exports = function(RED) {
     const fabricClient = require('fabric-client');
 
     let gateway = new fabricNetwork.Gateway();
+    let gatewayConnected = false;
 
     // The list of the event hubs, "indexed" by the node id
     // Think of it like a C# dictionnary
@@ -50,8 +51,14 @@ module.exports = function(RED) {
                 asLocalhost: true
             }
         };
-        await gateway.connect(parsedProfile, options);
-        node.log('connected to gateway');
+        if (!gatewayConnected) {
+            await gateway.connect(parsedProfile, options);
+            node.log('connected to gateway');
+            gatewayConnected = true;
+        } else {
+            node.log("Gateway already connected");
+        }
+
         const network = await gateway.getNetwork(channelName);
         node.log('got network');
         const contract = await network.getContract(contractName);
@@ -127,8 +134,15 @@ module.exports = function(RED) {
             }
             node.status({});
         }, (error) => {
-            if (timeout.done && error.message === 'ChannelEventHub has been shutdown') {
-                node.log('Expected chaincode listener shutdown');
+            if (isTimeout) {
+                if (timeout.done && error.message === 'ChannelEventHub has been shutdown') {
+                    node.log('Expected chaincode listener shutdown');
+                } else {
+
+                }
+            } else if (error.message === 'ChannelEventHub has been shutdown') {
+                node.log("Channel event hub has been shutdown ");
+                node.log(error);
             } else {
                 console.log(error);
                 node.error(error, msg);
