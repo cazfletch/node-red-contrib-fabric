@@ -22,53 +22,99 @@ module.exports = function(RED) {
     // Think of it like a C# dictionnary
     let eventHubsHandler = {};
 
-    let gatewaysHandler = {};
-
     /**
-     * Builds a gateway and its options
-     * @param {string} identityName identityName
-     * @param {Node} node node
-     * @returns {PromiseLike<Contract | never>} promise
+     * An object that manages all gateways
      */
-    async function gatewayFactory(identityName, node) {
-        let gateway = new fabricNetwork.Gateway();
-        const parsedProfile = JSON.parse(node.connection.connectionProfile);
-        const client = await fabricClient.loadFromConfig(parsedProfile);
-        node.log('loaded client from connection profile');
-        const mspid = client.getMspid();
-        node.log('got mspid,' + mspid);
-        const wallet = new fabricNetwork.FileSystemWallet(node.connection.walletLocation);
-        node.log('got wallet');
-        const options = {
-            wallet: wallet,
-            identity: identityName,
-            discovery: {
-                asLocalhost: true
+    let gateways = (function() {
+        let list = {};
+        /**
+         * Get the gateway based on its name
+         * @param {string} identityName identityName
+         * @param {string} mspid mspid
+         * @returns {PromiseLike<Contract | never>} promise
+         */
+        async function get(identityName, mspid) {
+            if (list.hasOwnProperty[mspid + identityName]) {
+                return list[mspid + identityName];
+            } else {
+                return null;
             }
-        };
-        gatewaysHandler[identityName] = {
-            gate: gateway,
-            options: options,
-            profile: parsedProfile,
-            isConnected: false
-        };
-        node.log('Create gateway for ' + identityName);
-        return gatewaysHandler[identityName];
-    }
-
-    /**
-     *  returns the existing gateway linked to the name of the identity or builds a new one if none exists for this identity
-     * @param {string} identityName identityName
-     * @param {Node} node node
-     * @returns {PromiseLike<Contract | never>} promise
-     */
-    async function getGateway(identityName, node) {
-        if (gatewaysHandler.hasOwnProperty(identityName)) {
-            return gatewaysHandler[identityName];
-        } else {
-            return await gatewayFactory(identityName, node);
         }
-    }
+
+        /**
+         * Returns MSPID from connection profile
+         * @param {Node} node node
+         * @param {object} parsedProfile the parsed profile
+         * @returns {PromiseLike<Contract | never>} promise
+         */
+        async function getMspid(node, parsedProfile) {
+            const client = await fabricClient.loadFromConfig(parsedProfile);
+            const mspid = client.getMspid();
+            node.log('got mspid,' + mspid);
+            return mspid;
+        }
+        /**
+         * Returns parsed profile from connection
+         * @param {Node} node node
+         * @returns {PromiseLike<Contract | never>} promise
+         */
+        async function getProfile(node) {
+            const parsedProfile = JSON.parse(node.connection.connectionProfile);
+            node.log('loaded client from connection profile');
+            return parsedProfile;
+        }
+        /**
+         * Builds a gateway and its options
+         * @param {string} identityName identityName
+         * @param {string} mspid mspid
+         * @param {object} parsedProfile parsedProfile
+         * @param {Node} node node
+         * @returns {PromiseLike<Contract | never>} promise
+         */
+        async function create(identityName, mspid, parsedProfile, node) {
+            let gateway = new fabricNetwork.Gateway();
+            const wallet = new fabricNetwork.FileSystemWallet(node.connection.walletLocation);
+            node.log('got wallet');
+            const options = {
+                wallet: wallet,
+                identity: identityName,
+                discovery: {
+                    asLocalhost: true
+                }
+            };
+            list[mspid + identityName] = {
+                gate: gateway,
+                options: options,
+                profile: parsedProfile,
+                isConnected: false
+            };
+            node.log('Create gateway for ' + mspid + identityName + ' from ' + node.id);
+            return list[mspid + identityName];
+        }
+
+        /**
+         * Connects the gateway
+         * @param {object} gateway the gateway to connect
+         * @returns {PromiseLike<Contract | never>} promise
+         */
+        async function connect(gateway) {
+            if (!gateway.isConnected) {
+                await gateway.gate.connect(gateway.profile, gateway.options);
+                gateway.isConnected = true;
+                return gateway;
+            } else {
+                return gateway;
+            }
+        }
+        return {
+            get: get,
+            create: create,
+            connect: connect,
+            mspid: getMspid,
+            profile: getProfile
+        };
+
+    })();
 
     /**
      *
@@ -79,14 +125,15 @@ module.exports = function(RED) {
      * @returns {PromiseLike<Contract | never>} promise
      */
     async function connect(identityName, channelName, contractName, node) {
-        let gateway = await getGateway(identityName, node);
-        if (!gateway.isConnected) {
-            await gateway.gate.connect(gateway.profile, gateway.options);
-            gateway.isConnected = true;
-            node.log('Connected to gateway');
-        } else {
-            node.log('Already connected to gateway');
+        let parsedProfile = await gateways.profile(node);
+        let mspid = await gateways.mspid(node, parsedProfile);
+        let gateway = await gateways.get(identityName, mspid);
+        if (gateway === null) {
+            node.log('gateway is null');
+            gateway = await gateways.create(identityName, mspid, parsedProfile, node);
         }
+        await gateways.connect(gateway);
+        node.log('connected gateway');
         const network = await gateway.gate.getNetwork(channelName);
         node.log('got network');
         const contract = await network.getContract(contractName);
