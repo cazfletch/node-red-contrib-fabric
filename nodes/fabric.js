@@ -417,6 +417,7 @@ module.exports = function(RED) {
                 } else {
                     await evaluate(connectData.contract, msg.payload, node);
                 }
+                node.status({});
 
             } catch (error) {
                 node.status({ fill: 'red', shape: 'dot', text: 'Error' });
