@@ -214,11 +214,10 @@ module.exports = function(RED) {
                 if (timeout.done && error.message === 'ChannelEventHub has been shutdown') {
                     node.log('Expected chaincode listener shutdown');
                 } else {
-                    node.log('TODO HERE');
+                    node.log(error);
+                    node.status({ fill: 'red', shape: 'dot', text: 'Error' });
+                    node.error(error, msg);
                 }
-            } else if (error.message === 'ChannelEventHub has been shutdown') {
-                node.log('Channel event hub has been shutdown ');
-                node.log(error);
             } else {
                 console.log(error);
                 node.error(error, msg);
