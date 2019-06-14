@@ -18,6 +18,7 @@ module.exports = function(RED) {
     const fabricNetwork = require('fabric-network');
     const fabricClient = require('fabric-client');
 
+
     // The list of the event hubs, "indexed" by the node id
     // Think of it like a C# dictionnary
     let eventHubsHandler = {};
@@ -115,6 +116,7 @@ module.exports = function(RED) {
         };
 
     })();
+
 
     /**
      *
@@ -218,6 +220,7 @@ module.exports = function(RED) {
                     node.status({ fill: 'red', shape: 'dot', text: 'Error' });
                     node.error(error, msg);
                 }
+
             } else {
                 console.log(error);
                 node.error(error, msg);
