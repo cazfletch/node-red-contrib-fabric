@@ -14,6 +14,8 @@ module.exports = function(RED) {
         this.identityName = n.identityName;
         this.connectionProfile = n.connectionProfile;
         this.walletLocation = n.walletLocation;
+        this.discoveryEnabled = n.discoveryEnabled;
+        this.discoveryAsLocalhost = n.discoveryAsLocalhost;
     }
     RED.nodes.registerType('fabric-config', FabricConfigNode);
 };
