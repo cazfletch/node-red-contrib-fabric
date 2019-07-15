@@ -37,6 +37,7 @@ module.exports = function(RED) {
         async function get(identityName, mspid) {
             // hasOwnProperty always returned undefined for unknown reason
             if (list[mspid + identityName] !== undefined && list[mspid + identityName] !== null) {
+
                 return list[mspid + identityName];
             } else {
                 return null;
@@ -62,7 +63,7 @@ module.exports = function(RED) {
          */
         async function getProfile(node) {
             const parsedProfile = JSON.parse(node.connection.connectionProfile);
-            node.log('loaded client from connection profile ');
+            node.log('loaded client from connection profile');
             return parsedProfile;
         }
         /**
