@@ -427,7 +427,7 @@ module.exports = function(RED) {
                 node.log('using connection: ' + identityName);
                 node.log('checking payload ' + util.inspect(msg.payload, false, null));
                 checkPayload(msg.payload);
-                const connectData = await connect(identityName, node.connection..discoveryEnabled, node.connection.discoveryAsLocalhost, config.channelName, config.contractName, node);
+                const connectData = await connect(identityName, node.connection.discoveryEnabled, node.connection.discoveryAsLocalhost, config.channelName, config.contractName, node);
                 if (config.actionType === 'submit') {
                     await submit(connectData.contract, msg.payload, node);
                 } else {
