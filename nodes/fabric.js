@@ -423,7 +423,7 @@ module.exports = function(RED) {
                 node.log('using connection: ' + identityName);
                 node.log('checking payload ' + util.inspect(msg.payload, false, null));
                 checkPayload(msg.payload);
-                const connectData = await connect(identityName, config.discoveryEnabled, config.discoveryAsLocalhost, config.channelName, config.contractName, node);
+                const connectData = await connect(identityName, node.connection..discoveryEnabled, node.connection.discoveryAsLocalhost, config.channelName, config.contractName, node);
                 if (config.actionType === 'submit') {
                     await submit(connectData.contract, msg.payload, node);
                 } else {
@@ -523,7 +523,7 @@ module.exports = function(RED) {
         this.connection = RED.nodes.getNode(config.connection);
         const identityName = node.connection.identityName;
         node.log('using connection: ' + identityName);
-        connect(identityName, config.discoveryEnabled, config.discoveryAsLocalhost, config.channelName, config.contractName, node)
+        connect(identityName, node.connection.discoveryEnabled, node.connection.discoveryAsLocalhost, config.channelName, config.contractName, node)
             .then((networkInfo) => {
                 return subscribeToEvent(networkInfo.network.getChannel(), config.contractName, config.peerName,
                     config.startBlock, config.endBlock, config.timeout, config.eventName, node, null);
