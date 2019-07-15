@@ -120,7 +120,7 @@ limitations under the License.
     <p>Hyperledger Fabric output node. Submit or evaluate transactions</p>
     <p>The name of the transaction should be set like <code>msg.payload.transactionName</code></p>
     <p>The arguments for the transaction should be set like <code>msg.payload.transactionArgs</code>. The arguments should be an array of strings</p>
-    <p>For example <code>{"transactionName: "myTransaction", "transactionArgs": ["arg1", "arg2"]}</code></p>
+    <p>For example <code>{"transactionName": "myTransaction", "transactionArgs": ["arg1", "arg2"]}</code></p>
 </script>
 <script type="text/javascript">
     RED.nodes.registerType('fabric-out', {
@@ -146,6 +146,7 @@ limitations under the License.
             actionType: {
                 value: 'submit'
             }
+
         },
         inputs: 1,
         outputs: 0,
