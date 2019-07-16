@@ -35,7 +35,9 @@ module.exports = function(RED) {
          * @returns {PromiseLike<Contract | never>} promise
          */
         async function get(identityName, mspid) {
-            if (list.hasOwnProperty[mspid + identityName]) {
+            // hasOwnProperty always returned undefined for unknown reason
+            if (list[mspid + identityName] !== undefined && list[mspid + identityName] !== null) {
+
                 return list[mspid + identityName];
             } else {
                 return null;
@@ -67,20 +69,24 @@ module.exports = function(RED) {
         /**
          * Builds a gateway and its options
          * @param {string} identityName identityName
+         * @param {string} discoveryEnabled is discovery enabled?
+         * @param {string} discoveryAsLocalhost is discovery as local host enabled?
          * @param {string} mspid mspid
          * @param {object} parsedProfile parsedProfile
          * @param {Node} node node
          * @returns {PromiseLike<Contract | never>} promise
          */
-        async function create(identityName, mspid, parsedProfile, node) {
+        async function create(identityName, discoveryEnabled, discoveryAsLocalhost, mspid, parsedProfile, node) {
             let gateway = new fabricNetwork.Gateway();
             const wallet = new fabricNetwork.FileSystemWallet(node.connection.walletLocation);
-            node.log('got wallet');
+            discoveryEnabled === 'true' ? discoveryEnabled = true : discoveryEnabled = false;
+            discoveryAsLocalhost === 'true' ? discoveryAsLocalhost = true : discoveryAsLocalhost = false;
             const options = {
                 wallet: wallet,
                 identity: identityName,
                 discovery: {
-                    asLocalhost: true
+                    enabled: discoveryEnabled,
+                    asLocalhost: discoveryAsLocalhost
                 }
             };
             list[mspid + identityName] = {
@@ -96,14 +102,18 @@ module.exports = function(RED) {
         /**
          * Connects the gateway
          * @param {object} gateway the gateway to connect
+         * @param {object} node the node object
          * @returns {PromiseLike<Contract | never>} promise
          */
-        async function connect(gateway) {
+        async function connect(gateway, node) {
             if (!gateway.isConnected) {
+                node.log('Connecting gateway');
                 await gateway.gate.connect(gateway.profile, gateway.options);
                 gateway.isConnected = true;
+                node.log('Connected gateway');
                 return gateway;
             } else {
+                node.log('Gateway already connected. Skipping connection process');
                 return gateway;
             }
         }
@@ -121,21 +131,24 @@ module.exports = function(RED) {
     /**
      *
      * @param {string} identityName identityName
+     * @param {string} discoveryEnabled is discovery enabled?
+     * @param {string} discoveryAsLocalhost is dicovery as localhost enabled?
      * @param {string} channelName channel
      * @param {string} contractName contract
      * @param {Node} node node
      * @returns {PromiseLike<Contract | never>} promise
      */
-    async function connect(identityName, channelName, contractName, node) {
+    async function connect(identityName, discoveryEnabled, discoveryAsLocalhost, channelName, contractName, node) {
+        node.log('Discovery in connect ' + discoveryAsLocalhost + ' ' + discoveryEnabled);
         let parsedProfile = await gateways.profile(node);
         let mspid = await gateways.mspid(node, parsedProfile);
+        node.log('connect mspid ' + mspid);
         let gateway = await gateways.get(identityName, mspid);
         if (gateway === null) {
             node.log('gateway is null');
-            gateway = await gateways.create(identityName, mspid, parsedProfile, node);
+            gateway = await gateways.create(identityName, discoveryEnabled, discoveryAsLocalhost, mspid, parsedProfile, node);
         }
-        await gateways.connect(gateway);
-        node.log('connected gateway');
+        await gateways.connect(gateway, node);
         const network = await gateway.gate.getNetwork(channelName);
         node.log('got network');
         const contract = await network.getContract(contractName);
@@ -207,8 +220,10 @@ module.exports = function(RED) {
                 eventList.push(eventPayload);
                 timeout.refresh();
             } else {
-                msg.payload = eventPayload;
-                node.send(msg);
+                // Reason: https://discourse.nodered.org/t/listener-node-same-msgid/13079/2
+                let clonedMsg = RED.util.cloneMessage(msg);
+                clonedMsg.payload = eventPayload;
+                node.send(clonedMsg);
             }
             node.status({});
         }, (error) => {
@@ -394,6 +409,7 @@ module.exports = function(RED) {
      * @returns {PromiseLike<Contract | never>} promise
      */
     async function queryTransaction(channel, transactionId) {
+
         return await channel.queryTransaction(transactionId);
     }
 
@@ -413,7 +429,7 @@ module.exports = function(RED) {
                 node.log('using connection: ' + identityName);
                 node.log('checking payload ' + util.inspect(msg.payload, false, null));
                 checkPayload(msg.payload);
-                const connectData = await connect(identityName, config.channelName, config.contractName, node);
+                const connectData = await connect(identityName, node.connection.discoveryEnabled, node.connection.discoveryAsLocalhost, config.channelName, config.contractName, node);
                 if (config.actionType === 'submit') {
                     await submit(connectData.contract, msg.payload, node);
                 } else {
@@ -454,31 +470,31 @@ module.exports = function(RED) {
                 node.log('CONFIG => ' + channelName + ' ' + contractName + ' ' + actionType);
                 node.log('using connection: ' + identityName);
                 if (actionType === 'submit') {
-                    const networkInfo = await connect(identityName, channelName, contractName, node);
+                    const networkInfo = await connect(identityName, node.connection.discoveryEnabled, node.connection.discoveryAsLocalhost, channelName, contractName, node);
                     const result = await submit(networkInfo.contract, msg.payload, node);
                     msg.payload = result;
                     node.status({});
                     node.send(msg);
                 } else if (actionType === 'evaluate') {
-                    const networkInfo = await connect(identityName, channelName, contractName, node);
+                    const networkInfo = await connect(identityName, node.connection.discoveryEnabled, node.connection.discoveryAsLocalhost, channelName, contractName, node);
                     const result = await evaluate(networkInfo.contract, msg.payload, node);
                     msg.payload = result;
                     node.status({});
                     node.send(msg);
                 } else if (actionType === 'event') {
-                    const networkInfo = await connect(identityName, channelName, contractName, node);
+                    const networkInfo = await connect(identityName, node.connection.discoveryEnabled, node.connection.discoveryAsLocalhost, channelName, contractName, node);
                     const channel = networkInfo.network.getChannel();
                     await subscribeToEvent(channel, contractName, msg.payload.peerName, msg.payload.startBlock,
                         msg.payload.endBlock, msg.payload.timeout, msg.payload.eventName, node, msg);
                 } else if (actionType === 'block') {
-                    const networkInfo = await connect(identityName, channelName, contractName, node);
+                    const networkInfo = await connect(identityName, node.connection.discoveryEnabled, node.connection.discoveryAsLocalhost, channelName, contractName, node);
                     const channel = networkInfo.network.getChannel();
                     const result = await queryBlock(channel, msg.payload.blockNumber);
                     msg.payload = result;
                     node.send(msg);
                     node.status({});
                 } else if (actionType === 'transaction') {
-                    const networkInfo = await connect(identityName, channelName, contractName, node);
+                    const networkInfo = await connect(identityName, node.connection.discoveryEnabled, node.connection.discoveryAsLocalhost, channelName, contractName, node);
                     const channel = networkInfo.network.getChannel();
                     const result = await queryTransaction(channel, msg.payload.transactionId);
                     msg.payload = result;
@@ -500,7 +516,6 @@ module.exports = function(RED) {
             node.status({});
         });
     }
-
     RED.nodes.registerType('fabric-mid', FabricMidNode);
 
     /**
@@ -514,7 +529,7 @@ module.exports = function(RED) {
         this.connection = RED.nodes.getNode(config.connection);
         const identityName = node.connection.identityName;
         node.log('using connection: ' + identityName);
-        connect(identityName, config.channelName, config.contractName, node)
+        connect(identityName, node.connection.discoveryEnabled, node.connection.discoveryAsLocalhost, config.channelName, config.contractName, node)
             .then((networkInfo) => {
                 return subscribeToEvent(networkInfo.network.getChannel(), config.contractName, config.peerName,
                     config.startBlock, config.endBlock, config.timeout, config.eventName, node, null);
