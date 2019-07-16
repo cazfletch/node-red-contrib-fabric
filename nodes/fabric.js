@@ -220,8 +220,10 @@ module.exports = function(RED) {
                 eventList.push(eventPayload);
                 timeout.refresh();
             } else {
-                msg.payload = eventPayload;
-                node.send(msg);
+                // Reason: https://discourse.nodered.org/t/listener-node-same-msgid/13079/2
+                let clonedMsg = RED.util.cloneMessage(msg);
+                clonedMsg.payload = eventPayload;
+                node.send(clonedMsg);
             }
             node.status({});
         }, (error) => {
